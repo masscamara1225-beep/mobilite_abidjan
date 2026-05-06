@@ -1,0 +1,207 @@
+/* ==============================================================================
+   OBSERVATOIRE DE LA MOBILITÉ — GRAND ABIDJAN
+   www/style.css — Thème orange/vert Côte d'Ivoire
+   Repris de la maquette v2 (Personne 2)
+   ============================================================================== */
+
+:root {
+  --orange : #F47920;   /* Orange CI */
+  --vert   : #009A44;   /* Vert CI */
+  --gris   : #2C3E50;
+  --bleu   : #2980B9;
+  --rouge  : #E74C3C;
+  --jaune  : #F39C12;
+  --violet : #8E44AD;
+
+  --bg      : #F1F4F8;
+  --white   : #FFFFFF;
+  --border  : #E2E8F0;
+  --muted   : #718096;
+  --sidebar : #1E2D3D;
+  --font    : 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* ---------- Reset léger ---------- */
+body, .content-wrapper, .right-side {
+  font-family: var(--font);
+  background: var(--bg) !important;
+  color: var(--gris);
+}
+
+/* ---------- Header (top bar) ---------- */
+.skin-black .main-header .navbar {
+  background-color: var(--white) !important;
+  border-bottom: 1px solid var(--border);
+}
+.skin-black .main-header .logo {
+  background-color: var(--white) !important;
+  color: var(--gris) !important;
+  border-right: 1px solid var(--border);
+}
+.skin-black .main-header .logo:hover {
+  background-color: var(--bg) !important;
+}
+
+/* ---------- Sidebar ---------- */
+.skin-black .main-sidebar,
+.skin-black .left-side {
+  background-color: var(--sidebar) !important;
+}
+.skin-black .sidebar-menu > li > a {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  border-left: 3px solid transparent;
+}
+.skin-black .sidebar-menu > li:hover > a,
+.skin-black .sidebar-menu > li.active > a {
+  background-color: rgba(244, 121, 32, 0.18) !important;
+  color: var(--orange) !important;
+  border-left-color: var(--orange) !important;
+}
+
+/* ---------- KPI Cards ---------- */
+.kpi {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 12px;
+  min-height: 90px;
+}
+.kpi::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--a, var(--orange));
+}
+.kpi .kl {
+  font-size: 9px;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.kpi .kv {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--gris);
+  line-height: 1.1;
+}
+.kpi .kd {
+  font-size: 10px;
+  margin-top: 4px;
+}
+.kpi .kd.up      { color: var(--vert); }
+.kpi .kd.dn      { color: var(--rouge); }
+.kpi .kd.neutral { color: var(--muted); }
+.kpi .ki {
+  position: absolute;
+  top: 12px; right: 14px;
+  font-size: 24px;
+  opacity: 0.12;
+}
+
+/* ---------- Story Box ---------- */
+.story {
+  background: linear-gradient(135deg,
+              rgba(244, 121, 32, 0.06),
+              rgba(0, 154, 68, 0.04));
+  border: 1px solid rgba(244, 121, 32, 0.15);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+}
+.story-ico { font-size: 16px; margin-right: 8px; }
+.story-txt {
+  font-size: 12px;
+  color: var(--gris);
+  line-height: 1.6;
+}
+.story-insight {
+  font-weight: 600;
+  color: var(--orange);
+}
+
+/* ---------- Interp Box (interprétation bleue) ---------- */
+.interp {
+  background: rgba(41, 128, 185, 0.06);
+  border-left: 3px solid var(--bleu);
+  border-radius: 0 6px 6px 0;
+  padding: 10px 14px;
+  font-size: 11px;
+  color: var(--bleu);
+  margin-top: 10px;
+  line-height: 1.5;
+}
+.interp strong { color: var(--gris); }
+
+/* ---------- Page Header ---------- */
+.ph {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.pt {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gris);
+}
+.ps {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+/* ---------- Boutons ---------- */
+.btn-primary {
+  background: var(--orange) !important;
+  border-color: var(--orange) !important;
+}
+.btn-primary:hover {
+  background: #d96910 !important;
+  border-color: #d96910 !important;
+}
+.btn-success {
+  background: var(--vert) !important;
+  border-color: var(--vert) !important;
+}
+
+/* ---------- Boxes shinydashboard ---------- */
+.box {
+  border-radius: 10px;
+  border-top-width: 3px;
+}
+.box.box-primary { border-top-color: var(--bleu); }
+.box.box-warning { border-top-color: var(--orange); }
+.box.box-danger  { border-top-color: var(--rouge); }
+.box.box-success { border-top-color: var(--vert); }
+.box-header { font-weight: 600; }
+
+/* ---------- DT (DataTables) ---------- */
+table.dataTable thead th {
+  background: var(--bg);
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+/* ---------- Pills ---------- */
+.pill {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 9px;
+  font-weight: 700;
+  display: inline-block;
+}
+.pill-rouge  { background: rgba(231, 76, 60, 0.12);  color: var(--rouge); }
+.pill-orange { background: rgba(244, 121, 32, 0.12); color: var(--orange); }
+.pill-jaune  { background: rgba(243, 156, 18, 0.12); color: var(--jaune); }
+.pill-vert   { background: rgba(0, 154, 68, 0.12);   color: var(--vert); }

@@ -1,0 +1,40 @@
+# ==============================================================================
+# .gitignore — Observatoire de la Mobilité Grand Abidjan
+# ==============================================================================
+
+# ----- R session -----
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+.Renviron
+
+# ----- Secrets (clés API) -----
+.env
+*.key
+TOMTOM_KEY*
+
+# ----- Données brutes (lourdes, à régénérer) -----
+data/raw/gtfs/*
+data/raw/osm/*.rds
+data/raw/tomtom/*.csv
+data/raw/hdx/*
+
+# ----- Sauf README explicatifs -----
+!data/raw/**/README.md
+!data/raw/**/.gitkeep
+
+# ----- Fichiers système -----
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+
+# ----- Logs et caches -----
+*.log
+rsconnect/
+*.Rcheck/
+
+# ----- IDE -----
+.vscode/
+.idea/
