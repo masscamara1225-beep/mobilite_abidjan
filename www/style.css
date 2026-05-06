@@ -1,207 +1,500 @@
 /* ==============================================================================
    OBSERVATOIRE DE LA MOBILITÉ — GRAND ABIDJAN
-   www/style.css — Thème orange/vert Côte d'Ivoire
-   Repris de la maquette v2 (Personne 2)
+   www/style.css — v2 minimaliste & élégant
+   Inspirations : Stripe, Linear, Vercel
    ============================================================================== */
 
 :root {
-  --orange : #F47920;   /* Orange CI */
-  --vert   : #009A44;   /* Vert CI */
-  --gris   : #2C3E50;
-  --bleu   : #2980B9;
-  --rouge  : #E74C3C;
-  --jaune  : #F39C12;
-  --violet : #8E44AD;
+  --orange   : #F47920;   /* accent CI — uniquement CTA */
+  --vert     : #009A44;
+  --bleu     : #2980B9;
+  --rouge    : #DC2626;
+  --jaune    : #F39C12;
 
-  --bg      : #F1F4F8;
-  --white   : #FFFFFF;
-  --border  : #E2E8F0;
-  --muted   : #718096;
-  --sidebar : #1E2D3D;
-  --font    : 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --text     : #0A0A0A;
+  --muted    : #71717A;
+  --border   : #E4E4E7;
+  --bg       : #FAFAFA;
+  --bg-soft  : #F4F4F5;
+  --white    : #FFFFFF;
+  --sidebar  : #0A0A0A;
+
+  --radius   : 8px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow   : 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  --font     : -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+               "Helvetica Neue", Arial, sans-serif;
 }
 
-/* ---------- Reset léger ---------- */
+/* ---------- Base ---------- */
 body, .content-wrapper, .right-side {
   font-family: var(--font);
   background: var(--bg) !important;
-  color: var(--gris);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
+
+* { box-sizing: border-box; }
 
 /* ---------- Header (top bar) ---------- */
 .skin-black .main-header .navbar {
-  background-color: var(--white) !important;
+  background: var(--white) !important;
   border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
 .skin-black .main-header .logo {
-  background-color: var(--white) !important;
-  color: var(--gris) !important;
+  background: var(--white) !important;
+  color: var(--text) !important;
   border-right: 1px solid var(--border);
+  font-weight: 600;
 }
 .skin-black .main-header .logo:hover {
-  background-color: var(--bg) !important;
+  background: var(--bg-soft) !important;
 }
+.skin-black .main-header .navbar .sidebar-toggle:hover {
+  background: var(--bg-soft) !important;
+  color: var(--text) !important;
+}
+
+/* Brand block */
+.brand { display: flex; align-items: center; gap: 10px; padding-left: 4px; }
+.brand-dot {
+  width: 8px; height: 8px;
+  background: var(--orange);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+.brand-main { font-size: 13px; font-weight: 600; color: var(--text); }
+.brand-sub  { font-size: 10px; color: var(--muted); font-weight: 400; }
 
 /* ---------- Sidebar ---------- */
 .skin-black .main-sidebar,
 .skin-black .left-side {
-  background-color: var(--sidebar) !important;
+  background: var(--sidebar) !important;
+  border-right: 1px solid #1F1F23;
 }
+
+.side-section {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+  padding: 18px 18px 8px;
+  margin-top: 4px;
+}
+.side-section:first-child { margin-top: 12px; }
+
 .skin-black .sidebar-menu > li > a {
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 13px;
-  border-left: 3px solid transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13.5px;
+  padding: 10px 18px;
+  border-left: 2px solid transparent;
+  transition: all 0.15s ease;
 }
-.skin-black .sidebar-menu > li:hover > a,
-.skin-black .sidebar-menu > li.active > a {
-  background-color: rgba(244, 121, 32, 0.18) !important;
+.skin-black .sidebar-menu > li > a:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: var(--white) !important;
+}
+.skin-black .sidebar-menu > li.active > a,
+.skin-black .sidebar-menu > li.active:hover > a {
+  background: rgba(244, 121, 32, 0.08) !important;
   color: var(--orange) !important;
   border-left-color: var(--orange) !important;
 }
+.sidebar-menu .treeview-menu > li > a {
+  font-size: 12.5px;
+  padding-left: 48px !important;
+  color: rgba(255, 255, 255, 0.45);
+}
+.sidebar-menu .treeview-menu > li.active > a {
+  color: var(--orange) !important;
+  background: transparent !important;
+}
 
-/* ---------- KPI Cards ---------- */
+.side-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  padding: 14px 18px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+  line-height: 1.6;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ---------- Page header ---------- */
+.ph {
+  margin-bottom: 8px;
+  padding: 4px 0 12px;
+}
+.ph-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.ph-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 4px 0 0;
+}
+
+.section-subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0 0 24px;
+  max-width: 760px;
+  line-height: 1.6;
+}
+
+/* ---------- KPI cards minimalistes ---------- */
 .kpi {
   background: var(--white);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
+  border-radius: var(--radius);
+  padding: 18px 18px 16px;
   position: relative;
-  overflow: hidden;
-  margin-bottom: 12px;
-  min-height: 90px;
+  margin-bottom: 16px;
+  transition: border-color 0.15s ease;
 }
+.kpi:hover { border-color: #D4D4D8; }
 .kpi::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
+  top: 0; left: 0;
+  width: 24px;
+  height: 2px;
   background: var(--a, var(--orange));
+  border-radius: 2px 0 0 0;
 }
-.kpi .kl {
-  font-size: 9px;
+.kpi-label {
+  font-size: 12px;
   color: var(--muted);
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  margin-bottom: 5px;
+  font-weight: 500;
+  margin-bottom: 6px;
 }
-.kpi .kv {
+.kpi-value {
   font-size: 24px;
-  font-weight: 700;
-  color: var(--gris);
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.02em;
   line-height: 1.1;
 }
-.kpi .kd {
-  font-size: 10px;
-  margin-top: 4px;
-}
-.kpi .kd.up      { color: var(--vert); }
-.kpi .kd.dn      { color: var(--rouge); }
-.kpi .kd.neutral { color: var(--muted); }
-.kpi .ki {
-  position: absolute;
-  top: 12px; right: 14px;
-  font-size: 24px;
-  opacity: 0.12;
-}
-
-/* ---------- Story Box ---------- */
-.story {
-  background: linear-gradient(135deg,
-              rgba(244, 121, 32, 0.06),
-              rgba(0, 154, 68, 0.04));
-  border: 1px solid rgba(244, 121, 32, 0.15);
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 14px;
-}
-.story-ico { font-size: 16px; margin-right: 8px; }
-.story-txt {
-  font-size: 12px;
-  color: var(--gris);
-  line-height: 1.6;
-}
-.story-insight {
-  font-weight: 600;
-  color: var(--orange);
-}
-
-/* ---------- Interp Box (interprétation bleue) ---------- */
-.interp {
-  background: rgba(41, 128, 185, 0.06);
-  border-left: 3px solid var(--bleu);
-  border-radius: 0 6px 6px 0;
-  padding: 10px 14px;
-  font-size: 11px;
-  color: var(--bleu);
-  margin-top: 10px;
-  line-height: 1.5;
-}
-.interp strong { color: var(--gris); }
-
-/* ---------- Page Header ---------- */
-.ph {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.pt {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--gris);
-}
-.ps {
+.kpi-hint {
   font-size: 11px;
   color: var(--muted);
-  margin-top: 3px;
+  margin-top: 6px;
+}
+
+/* ---------- Cards minimalistes (remplace box() shinydashboard) ---------- */
+.card-min {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.card-min-header {
+  padding: 14px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  background: var(--white);
+}
+.card-min-body { padding: 18px; }
+.card-min-body-flush { padding: 0; }
+
+/* On masque les box() shinydashboard si jamais utilisées */
+.box {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  border-top-width: 1px !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+.box-header {
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 13px;
 }
 
 /* ---------- Boutons ---------- */
+.btn {
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  transition: all 0.12s ease;
+}
+.btn-pri {
+  background: var(--text) !important;
+  border-color: var(--text) !important;
+  color: var(--white) !important;
+}
+.btn-pri:hover {
+  background: #2D2D33 !important;
+  border-color: #2D2D33 !important;
+}
+.btn-sec {
+  background: var(--white) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+.btn-sec:hover {
+  background: var(--bg-soft) !important;
+}
+.btn-block {
+  width: 100%;
+  margin-top: 8px;
+}
+.btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* shinydashboard btn-primary par défaut */
 .btn-primary {
-  background: var(--orange) !important;
-  border-color: var(--orange) !important;
+  background: var(--text) !important;
+  border-color: var(--text) !important;
 }
 .btn-primary:hover {
-  background: #d96910 !important;
-  border-color: #d96910 !important;
-}
-.btn-success {
-  background: var(--vert) !important;
-  border-color: var(--vert) !important;
+  background: #2D2D33 !important;
+  border-color: #2D2D33 !important;
 }
 
-/* ---------- Boxes shinydashboard ---------- */
-.box {
-  border-radius: 10px;
-  border-top-width: 3px;
+/* ---------- wellPanel minimaliste ---------- */
+.well, .well-min {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: none;
+  margin-bottom: 16px;
 }
-.box.box-primary { border-top-color: var(--bleu); }
-.box.box-warning { border-top-color: var(--orange); }
-.box.box-danger  { border-top-color: var(--rouge); }
-.box.box-success { border-top-color: var(--vert); }
-.box-header { font-weight: 600; }
+.well-min .form-group { margin-bottom: 12px; }
+.well-min .form-group:last-child { margin-bottom: 0; }
 
-/* ---------- DT (DataTables) ---------- */
-table.dataTable thead th {
-  background: var(--bg);
+/* ---------- sidebarLayout (panneau filtres) ---------- */
+.sidebar-panel, .col-sm-4.sidebarPanel {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.panel-h {
+  font-size: 12px;
+  font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
-  font-size: 10px;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  margin: 0 0 12px;
 }
 
-/* ---------- Pills ---------- */
-.pill {
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 9px;
-  font-weight: 700;
-  display: inline-block;
+/* ---------- Inputs ---------- */
+.form-control,
+.selectize-input,
+.bootstrap-select .btn,
+.shiny-input-container input[type="text"] {
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  box-shadow: none !important;
+  background: var(--white) !important;
+  color: var(--text) !important;
+  transition: border-color 0.12s ease;
 }
-.pill-rouge  { background: rgba(231, 76, 60, 0.12);  color: var(--rouge); }
-.pill-orange { background: rgba(244, 121, 32, 0.12); color: var(--orange); }
-.pill-jaune  { background: rgba(243, 156, 18, 0.12); color: var(--jaune); }
-.pill-vert   { background: rgba(0, 154, 68, 0.12);   color: var(--vert); }
+.form-control:focus,
+.selectize-input.focus {
+  border-color: var(--orange) !important;
+  box-shadow: 0 0 0 3px rgba(244, 121, 32, 0.1) !important;
+}
+
+label, .control-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+/* Slider */
+.irs--shiny .irs-bar { background: var(--text); border-color: var(--text); }
+.irs--shiny .irs-handle { border-color: var(--text); background: var(--white); }
+.irs--shiny .irs-from, .irs--shiny .irs-to, .irs--shiny .irs-single {
+  background: var(--text);
+}
+
+/* Checkbox / radio */
+.checkbox label, .radio label { font-size: 13px; color: var(--text); }
+
+/* ---------- Tabs (tabsetPanel) ---------- */
+.nav-tabs {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.nav-tabs > li > a {
+  border: none !important;
+  color: var(--muted) !important;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 14px !important;
+  border-radius: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  background: transparent !important;
+  margin-right: 4px;
+}
+.nav-tabs > li > a:hover {
+  color: var(--text) !important;
+  background: transparent !important;
+}
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+  color: var(--text) !important;
+  border-bottom-color: var(--orange) !important;
+  background: transparent !important;
+}
+
+/* ---------- Note de lecture (sobre, sans emoji) ---------- */
+.note {
+  background: var(--bg-soft);
+  border-left: 2px solid var(--text);
+  border-radius: 0 6px 6px 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text);
+  margin-top: 12px;
+  line-height: 1.6;
+}
+.note strong { color: var(--muted); font-weight: 600; }
+
+/* ---------- IC line ---------- */
+.ic-line {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  margin: 8px 0 0;
+}
+.ic-line strong { color: var(--bleu); }
+
+/* ---------- Source note ---------- */
+.source-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 12px;
+  text-align: right;
+}
+
+.muted-small { font-size: 11px; color: var(--muted); }
+
+/* ---------- État vide ---------- */
+.empty-state {
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--bg-soft);
+  border-radius: var(--radius);
+  border: 1px dashed var(--border);
+}
+
+/* ---------- Bars (état temps réel accueil) ---------- */
+.bars { display: flex; flex-direction: column; gap: 8px; }
+.bar-row { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.bar-label { min-width: 90px; color: var(--text); font-weight: 500; }
+.bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.bar-value {
+  min-width: 36px;
+  text-align: right;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Itinéraire résultat ---------- */
+.itin-result {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--bg-soft);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+}
+.itin-result p { margin: 0 0 4px; }
+
+/* ---------- DataTable ---------- */
+table.dataTable {
+  border-collapse: separate !important;
+  border-spacing: 0;
+}
+table.dataTable thead th {
+  background: var(--bg-soft);
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 10px 12px !important;
+}
+table.dataTable tbody td {
+  font-size: 13px;
+  padding: 9px 12px !important;
+  border-bottom: 1px solid var(--bg-soft);
+}
+table.dataTable.compact tbody td { padding: 6px 10px !important; }
+
+.dataTables_wrapper .dataTables_filter input,
+.dataTables_wrapper .dataTables_length select {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+/* ---------- Box content scroll ---------- */
+.content { padding: 18px 22px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  .ph-title { font-size: 18px; }
+  .kpi-value { font-size: 20px; }
+  .content { padding: 14px; }
+}
+
+/* loader local sur un output (carte, graphique...) */
+.boot-local {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  min-width: 240px;
+  padding: 18px 22px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+.boot-local p {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+  margin: 0;
+}
+.boot-local .bar-wrap {
+  width: 200px;
+  margin-top: 0;
+}

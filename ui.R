@@ -1,63 +1,85 @@
 # ==============================================================================
 # OBSERVATOIRE DE LA MOBILITÉ — GRAND ABIDJAN
-# ui.R — Interface utilisateur — 6 onglets
-# Personne 2 — Shiny + UI
+# ui.R — Interface utilisateur — 8 onglets (CDC v7)
+#
+# Structure de la navigation :
+#   1. Accueil           (P2)
+#   2. Carte             (P2) — sidebarLayout
+#   3. Trafic            (P2) — tabsetPanel 3 sous-onglets + IC 95%
+#   4. Exploration EDA   (P2) — wellPanel + IC 95%
+#   5. Réseau            (P1)
+#   6. ML & Prédiction   (P1) — menuSubItem (Prédiction / Évaluation / Clustering)
+#   7. Données           (P1)
+#   8. Recommandations   (P1)
 # ==============================================================================
 
 ui <- dashboardPage(
   skin = "black",
 
   # ----------------------------------------------------------------------------
-  # HEADER (top bar)
+  # HEADER
   # ----------------------------------------------------------------------------
   dashboardHeader(
     title = tags$div(
-      style = "display:flex;align-items:center;gap:8px;",
-      tags$div(
-        style = "width:30px;height:30px;background:#F47920;border-radius:8px;
-                 display:flex;align-items:center;justify-content:center;
-                 color:white;font-size:15px;",
-        "🚗"
-      ),
-      tags$div(
-        style = "line-height:1.1;",
-        tags$div(style = "font-size:13px;font-weight:600;", "Observatoire Mobilité"),
-        tags$div(style = "font-size:9px;opacity:0.7;", "Grand Abidjan")
-      )
+      class = "brand",
+      tags$span(class = "brand-dot"),
+      tags$span(class = "brand-text",
+                tags$span(class = "brand-main", "Mobilité Abidjan"),
+                tags$span(class = "brand-sub", "Observatoire des données"))
     ),
     titleWidth = 280
   ),
 
   # ----------------------------------------------------------------------------
-  # SIDEBAR (navigation 6 onglets)
+  # SIDEBAR — Navigation 8 onglets
   # ----------------------------------------------------------------------------
   dashboardSidebar(
     width = 280,
     sidebarMenu(
       id = "main_tabs",
-      menuItem("Accueil",                tabName = "accueil", icon = icon("home")),
-      menuItem("Carte & Itinéraires",    tabName = "carte",   icon = icon("map")),
-      menuItem("Analyse du Trafic",      tabName = "trafic",  icon = icon("chart-line")),
-      menuItem("Réseau des Communes",    tabName = "reseau",  icon = icon("project-diagram")),
-      menuItem("Prédictions ML",         tabName = "ml",      icon = icon("robot")),
-      menuItem("Explorer les données",   tabName = "donnees", icon = icon("table"))
+
+      # Section P2 (Massaram)
+      tags$div(class = "side-section", "Diagnostic"),
+      menuItem("Accueil",       tabName = "accueil",     icon = icon("house")),
+      menuItem("Carte",         tabName = "carte",       icon = icon("map")),
+      menuItem("Trafic",        tabName = "trafic",      icon = icon("chart-line")),
+      menuItem("Exploration",   tabName = "exploration", icon = icon("magnifying-glass-chart")),
+
+      # Section P1 (Axelle)
+      tags$div(class = "side-section", "Analyse avancée"),
+      menuItem("Réseau",        tabName = "reseau", icon = icon("diagram-project")),
+      menuItem("Prédiction ML", icon = icon("robot"), startExpanded = FALSE,
+               menuSubItem("Prédire un trajet", tabName = "ml_pred"),
+               menuSubItem("Performance modèles", tabName = "ml_eval"),
+               menuSubItem("Profils de communes", tabName = "ml_clust")),
+      menuItem("Données",       tabName = "donnees",         icon = icon("table")),
+      menuItem("Recommandations", tabName = "recommandations", icon = icon("lightbulb"))
     ),
-    tags$div(
-      style = "padding:14px;font-size:9px;color:rgba(255,255,255,0.4);
-               position:absolute;bottom:0;",
-      paste("v", APP_VERSION),
-      tags$br(),
-      "INPHB × Abidjan Mobilité Durable"
+
+    # Footer sidebar — équipe + version
+    tags$div(class = "side-footer",
+      tags$div("CAMARA Massaram · LOGBO Axelle"),
+      tags$div("M1 DS IA · UFHB · 2025"),
+      tags$div(style = "margin-top:6px; opacity:0.6;", paste("v", APP_VERSION))
     )
   ),
 
   # ----------------------------------------------------------------------------
-  # BODY (contenu des onglets)
+  # BODY
   # ----------------------------------------------------------------------------
   dashboardBody(
-    # Charger CSS personnalisé + activer shinyjs/waiter
     useShinyjs(),
     use_waiter(),
+    waiterShowOnLoad(
+      html = tagList(
+        tags$div(class = "boot",
+           tags$div(class = "boot-dot"),
+           tags$h3("Mobilité Abidjan"),
+           tags$p("Chargement des données…")
+        )
+      ),
+      color = "#0A0A0A"
+    ),
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "style.css"),
       tags$meta(charset = "UTF-8")
@@ -65,260 +87,435 @@ ui <- dashboardPage(
 
     tabItems(
 
-      # ===== ONGLET 1 — ACCUEIL ============================================
+      # ====================================================================
+      # ONGLET 1 — ACCUEIL (P2)
+      # ====================================================================
       tabItem(
         tabName = "accueil",
-        story_box(
-          text = "<strong>L'histoire que ce tableau de bord raconte :</strong>
-                  Abidjan perd chaque jour des millions d'heures dans les
-                  embouteillages. Ce tableau de bord analyse les données pour
-                  répondre à une question simple — ",
-          insight = "où, quand et pourquoi la ville se bloque-t-elle ?"
-        ),
         page_header(
-          title    = "Vue d'ensemble — Mobilité du Grand Abidjan",
-          subtitle = "Données : GTFS DT4A + TomTom + OSM • Mise à jour : Mai 2025"
+          title = "Vue d'ensemble",
+          meta  = "Données du Grand Abidjan · Mai 2025 · GTFS · TomTom · OSM"
         ),
-        # KPIs (4 cards) — TODO J2 : remplir avec valueBoxOutput
-        fluidRow(
-          column(3, kpi_card("Communes couvertes", "13",
-                             delta = "↑ Grand Abidjan complet",
-                             color = COULEURS$orange, icon = "🏙️", delta_dir = "up")),
-          column(3, kpi_card("Arrêts de transport", "847",
-                             delta = "↑ SOTRA + Gbaka + Woro",
-                             color = COULEURS$bleu, icon = "🚏", delta_dir = "up")),
-          column(3, kpi_card("Axes en congestion", "—",
-                             delta = "à connecter au reactive",
-                             color = COULEURS$rouge, icon = "🔴", delta_dir = "dn")),
-          column(3, kpi_card("Temps perdu / jour", "2h 20",
-                             delta = "↑ vs 45 min en 2015",
-                             color = COULEURS$vert, icon = "⏱️", delta_dir = "dn"))
+        section_subtitle(
+          "Abidjan perd en moyenne 2 h 20 par jour dans les transports.
+           Cet observatoire révèle où, quand et pourquoi la ville se bloque."
         ),
-        # Bloc "à propos" + état temps réel — TODO J2
+
+        # KPIs (4 cards minimalistes)
         fluidRow(
-          column(8, box(width = 12, status = "warning",
-                        title = "🌍 À propos — Notre mission",
-                        tags$p("TODO J2 — Texte de présentation projet + équipe."),
-                        actionButton("go_carte", "🗺️ Voir la carte →",
-                                     class = "btn-primary"))),
-          column(4, box(width = 12, status = "danger",
-                        title = "⚡ État actuel — Qui est bloqué ?",
-                        uiOutput("etat_temps_reel")))
+          column(3, kpi_card("Communes",   "13",
+                             hint = "Grand Abidjan", accent = COULEURS$orange)),
+          column(3, kpi_card("Arrêts",     "847",
+                             hint = "SOTRA · Gbaka · Woro", accent = COULEURS$bleu)),
+          column(3, kpi_card("Axes bloqués",
+                             textOutput("kpi_axes_bloques", inline = TRUE),
+                             hint = "en heure de pointe", accent = COULEURS$rouge)),
+          column(3, kpi_card("Temps perdu", "2 h 20",
+                             hint = "vs 45 min en 2015", accent = COULEURS$vert))
+        ),
+
+        # Présentation + état actuel
+        fluidRow(
+          column(7,
+            card(
+              title = "À propos du projet",
+              tags$p("Cet observatoire a été développé par ",
+                     tags$strong("CAMARA Massaram"), " et ",
+                     tags$strong("LOGBO Axelle"),
+                     " (M1 Data Science et IA · UFHB) pour l'ONG ",
+                     tags$strong("Abidjan Mobilité Durable"), "."),
+              tags$p("Il croise trois sources de données — réseau GTFS des bus
+                     et woro-woro, vitesses TomTom sur 10 axes, et géométrie
+                     OpenStreetMap — pour rendre visible une crise jusqu'ici
+                     invisibilisée par l'absence de données ouvertes."),
+              tags$div(class = "btn-row",
+                actionButton("go_carte",  "Voir la carte",     class = "btn-pri"),
+                actionButton("go_rapport","Lire le rapport",   class = "btn-sec")
+              )
+            )
+          ),
+          column(5,
+            card(
+              title = "Niveau actuel par commune",
+              uiOutput("etat_temps_reel")
+            )
+          )
         )
       ),
 
-      # ===== ONGLET 2 — CARTE ==============================================
+      # ====================================================================
+      # ONGLET 2 — CARTE (P2) — sidebarLayout
+      # ====================================================================
       tabItem(
         tabName = "carte",
-        story_box(
-          text = "<strong>Où se forment les bouchons ?</strong>
-                  La carte localise précisément les zones critiques —"
-        ),
         page_header(
-          "Réseau de transport & congestion en temps réel",
-          "Couleur des routes = niveau de congestion • Points = arrêts (cliquez pour les détails)"
+          title = "Carte du réseau",
+          meta  = "Couleur des routes = niveau de congestion · Cliquez sur un arrêt pour le détail"
         ),
-        fluidRow(
-          column(3,
-            box(width = 12, title = "Filtres", status = "primary",
-              checkboxGroupInput("filtre_transport", "Type de transport",
-                choices  = c("Bus SOTRA", "Gbaka", "Woro-woro"),
-                selected = c("Bus SOTRA", "Gbaka", "Woro-woro")),
-              selectInput("filtre_commune", "Commune",
-                choices  = c("Toutes" = "all"),
-                selected = "all"),
-              tags$hr(),
-              tags$h5("🧭 Calcul d'itinéraire"),
-              textInput("itin_depart",  "Départ",  placeholder = "ex : Plateau"),
-              textInput("itin_arrivee", "Arrivée", placeholder = "ex : Yopougon"),
-              actionButton("btn_itin", "Calculer", class = "btn-primary"),
-              uiOutput("resultat_itin")
-            )
+        section_subtitle(
+          "Les chiffres deviennent géographie. Voyez physiquement où se forment
+           les bouchons et calculez votre itinéraire optimal."
+        ),
+        sidebarLayout(
+          sidebarPanel(
+            width = 3,
+            tags$h4("Filtres", class = "panel-h"),
+            checkboxGroupInput("filtre_transport", "Transport",
+              choices  = c("Bus SOTRA", "Gbaka", "Woro-woro"),
+              selected = c("Bus SOTRA", "Gbaka", "Woro-woro")),
+            selectInput("filtre_commune", "Commune",
+              choices = c("Toutes" = "all"), selected = "all"),
+            tags$hr(),
+            tags$h4("Itinéraire", class = "panel-h"),
+            textInput("itin_depart",  "Départ",  placeholder = "ex : Plateau"),
+            textInput("itin_arrivee", "Arrivée", placeholder = "ex : Yopougon"),
+            actionButton("btn_itin", "Calculer", class = "btn-pri btn-block"),
+            uiOutput("resultat_itin")
           ),
-          column(9, leafletOutput("carte_principale", height = 600))
-        ),
-        interp_box("TODO J3-J4 — Le Pont HKB et l'axe Adjamé-Plateau sont en
-                    rouge — ce sont les deux goulots d'étranglement du réseau."),
-        lien_suivant(
-          "Vous voyez où se forment les bouchons. L'onglet suivant vous explique
-           à quelle heure ils apparaissent.",
-          "Analyse du Trafic"
+          mainPanel(
+            width = 9,
+            withSpinner(
+              leafletOutput("carte_principale", height = 600),
+              color = COULEURS$orange, type = 6
+            ),
+            note_box("Le Pont HKB et l'axe Adjamé–Plateau concentrent l'essentiel
+                      de la congestion. Contourner ces deux points peut faire
+                      gagner 23 min en heure de pointe.")
+          )
         )
       ),
 
-      # ===== ONGLET 3 — TRAFIC =============================================
+      # ====================================================================
+      # ONGLET 3 — TRAFIC (P2) — tabsetPanel + IC 95%
+      # ====================================================================
       tabItem(
         tabName = "trafic",
-        story_box(
-          text = "<strong>Quand la ville se bloque-t-elle ?</strong>
-                  Abidjan suit un rythme prévisible — deux pics quotidiens à 8h et 17h."
-        ),
         page_header(
-          "Patterns de congestion — Qui bloque, quand et combien ?",
-          "Source : TomTom Traffic Flow API • 10 axes • 5 jours de mesures"
+          title = "Patterns de congestion",
+          meta  = "TomTom Traffic Flow · 10 axes · 5 jours · IC 95 % visualisés"
         ),
-        fluidRow(
-          column(6,
-            box(width = 12, title = "Vitesse au cours de la journée",
-                status = "warning",
-                # pickerInput nécessite shinyWidgets → on commence avec selectInput multi
-                selectInput("trafic_communes", "Communes (multi)",
-                  choices  = NULL, multiple = TRUE),
-                plotlyOutput("courbe_journaliere", height = 350))
+        section_subtitle(
+          "Abidjan suit un rythme prévisible : deux pics quotidiens à 8 h et 17 h.
+           La zone bleue autour des courbes représente l'intervalle de confiance à 95 %."
+        ),
+        tabsetPanel(
+          id = "trafic_subtabs",
+          type = "tabs",
+
+          tabPanel(
+            "Courbe journalière",
+            br(),
+            fluidRow(
+              column(3,
+                wellPanel(
+                  pickerInput("trafic_communes", "Communes",
+                    choices  = NULL, multiple = TRUE,
+                    options  = pickerOptions(actionsBox = TRUE, size = 8)),
+                  checkboxGroupInput("trafic_jours", "Jours",
+                    choices  = c("Lun","Mar","Mer","Jeu","Ven","Sam","Dim"),
+                    selected = c("Lun","Mar","Mer","Jeu","Ven"),
+                    inline   = TRUE),
+                  radioButtons("trafic_y", "Indicateur",
+                    choices  = c("Vitesse (km/h)" = "vitesse_kmh",
+                                 "Indice de congestion" = "indice_cong"),
+                    selected = "vitesse_kmh")
+                )
+              ),
+              column(9,
+                withSpinner(
+                  plotlyOutput("courbe_journaliere", height = 420),
+                  color = COULEURS$bleu, type = 6
+                ),
+                note_box(textOutput("insight_courbe", inline = TRUE))
+              )
+            )
           ),
-          column(6,
-            box(width = 12, title = "Heatmap commune × heure",
-                status = "danger",
-                checkboxGroupInput("trafic_jours", "Jours",
-                  choices  = c("Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"),
-                  selected = c("Lun", "Mar", "Mer", "Jeu", "Ven"),
-                  inline   = TRUE),
-                plotlyOutput("heatmap_hebdo", height = 350))
-          )
-        ),
-        fluidRow(
-          column(12,
-            box(width = 12, title = "Top 5 axes les plus congestionnés",
-                status = "primary",
-                plotlyOutput("barplot_pires", height = 280),
-                interp_box(textOutput("insight_trafic", inline = TRUE))
+
+          tabPanel(
+            "Carte de chaleur",
+            br(),
+            fluidRow(
+              column(3,
+                wellPanel(
+                  selectInput("heat_jour", "Jour",
+                    choices = c("Tous","Lun","Mar","Mer","Jeu","Ven","Sam","Dim"),
+                    selected = "Tous"),
+                  selectInput("heat_aggreg", "Agrégation",
+                    choices = c("Moyenne" = "mean",
+                                "Médiane" = "median",
+                                "Maximum" = "max"),
+                    selected = "mean")
+                )
+              ),
+              column(9,
+                withSpinner(
+                  plotlyOutput("heatmap_hebdo", height = 420),
+                  color = COULEURS$orange, type = 6
+                )
+              )
+            )
+          ),
+
+          tabPanel(
+            "Comparateur d'axes",
+            br(),
+            fluidRow(
+              column(3,
+                wellPanel(
+                  checkboxGroupInput("comp_axes", "Axes à comparer",
+                    choices = NULL),
+                  sliderInput("comp_heure", "Heure de référence",
+                    min = 0, max = 23, value = 8, step = 1)
+                )
+              ),
+              column(9,
+                withSpinner(
+                  plotlyOutput("barplot_pires", height = 420),
+                  type = 6
+                )
+              )
             )
           )
-        ),
-        lien_suivant(
-          "Vous savez maintenant où et quand. L'onglet Réseau vous explique
-           pourquoi.", "Réseau des Communes"
         )
       ),
 
-      # ===== ONGLET 4 — RÉSEAU ============================================
+      # ====================================================================
+      # ONGLET 4 — EXPLORATION EDA (P2) — wellPanel + IC 95%
+      # ====================================================================
+      tabItem(
+        tabName = "exploration",
+        page_header(
+          title = "Exploration statistique",
+          meta  = "Analyse exploratoire · IC 95 % par commune · Données flux_enrichi.csv"
+        ),
+        section_subtitle(
+          "Au-delà des moyennes, les distributions et intervalles de confiance
+           révèlent la fiabilité réelle des temps de trajet."
+        ),
+
+        # Filtres groupés dans un wellPanel (cours chap.10)
+        wellPanel(
+          class = "well-min",
+          fluidRow(
+            column(3, selectInput("explo_commune", "Commune",
+                                  choices = NULL, multiple = FALSE)),
+            column(3, selectInput("explo_niveau", "Niveau de congestion",
+                                  choices = c("Tous","Fluide","Modéré",
+                                              "Congestionné","Bloqué"),
+                                  selected = "Tous")),
+            column(3, sliderInput("explo_bins", "Classes de l'histogramme",
+                                  min = 10, max = 60, value = 25, step = 5)),
+            column(3, checkboxInput("explo_outliers", "Afficher les outliers",
+                                    value = TRUE))
+          )
+        ),
+
+        # Boxplot + Distribution + IC
+        fluidRow(
+          column(6,
+            card(
+              title = "Distribution des vitesses par commune",
+              withSpinner(plotlyOutput("expl_boxplot", height = 380), type = 6)
+            )
+          ),
+          column(6,
+            card(
+              title = "Histogramme + IC 95 %",
+              withSpinner(plotlyOutput("expl_histo", height = 380), type = 6),
+              tags$p(class = "ic-line",
+                "IC 95 % : ", tags$strong(textOutput("expl_ic_text", inline = TRUE)))
+            )
+          )
+        ),
+
+        fluidRow(
+          column(12,
+            card(
+              title = "Statistiques descriptives par commune (avec IC 95 %)",
+              withSpinner(DTOutput("expl_stats_table"), type = 6)
+            )
+          )
+        ),
+
+        note_box("Adjamé et Abobo affichent un IC large (forte variabilité),
+                  signe que leurs temps de trajet sont peu prévisibles.
+                  Yopougon et Port-Bouët ont un IC étroit : circulation stable.")
+      ),
+
+      # ====================================================================
+      # ONGLET 5 — RÉSEAU (P1)
+      # ====================================================================
       tabItem(
         tabName = "reseau",
-        story_box(
-          text = "<strong>Quelle commune paralyse tout Abidjan ?</strong>
-                  Adjamé n'est pas congestionné par hasard — c'est le nœud central du réseau."
-        ),
         page_header(
-          "Réseau de flux inter-communes — Qui dépend de qui ?",
-          "Taille du nœud = population • Épaisseur de l'arête = volume de flux • Couleur = bassin Louvain"
+          title = "Réseau inter-communes",
+          meta  = "igraph · betweenness · closeness · Louvain"
         ),
-        fluidRow(
-          column(8,
-            box(width = 12, title = "Graphe interactif des communes",
-                status = "warning",
-                sliderInput("seuil_flux", "Seuil minimum de flux",
-                  min = 0, max = 100, value = 10, post = " %"),
-                visNetworkOutput("graphe_communes", height = 500))
+        section_subtitle(
+          "Quelle commune paralyse tout Abidjan si elle est saturée ?
+           La théorie des graphes révèle les nœuds critiques."
+        ),
+        sidebarLayout(
+          sidebarPanel(
+            width = 3,
+            tags$h4("Paramètres", class = "panel-h"),
+            sliderInput("seuil_flux", "Seuil minimum de flux",
+                        min = 0, max = 100, value = 10, post = " %"),
+            selectInput("metrique_choix", "Trier par",
+              choices = c("Intermédiarité" = "intermediar",
+                          "Proximité"      = "proximite",
+                          "Degré"          = "degre_total")),
+            tags$hr(),
+            verbatimTextOutput("modularite"),
+            uiOutput("communautes_resume")
           ),
-          column(4,
-            box(width = 12, title = "Métriques clés",
-                status = "primary",
-                selectInput("metrique_choix", "Trier par",
-                  choices = c("Intermédiairité (betweenness)" = "intermediar",
-                              "Proximité (closeness)"         = "proximite",
-                              "Degré"                         = "degre_total")),
-                tableOutput("tableau_metriques")
+          mainPanel(
+            width = 9,
+            withSpinner(
+              visNetworkOutput("graphe_communes_vis", height = 500),
+              color = COULEURS$vert, type = 6
             ),
-            box(width = 12, title = "🔍 Bassins Louvain",
-                status = "success",
-                verbatimTextOutput("modularite"),
-                uiOutput("communautes_resume"))
+            tableOutput("tableau_metriques"),
+            note_box("Adjamé concentre la majorité des flux inter-communes.
+                      Si Adjamé est saturée, l'ensemble du Grand Abidjan l'est.")
           )
-        ),
-        interp_box("TODO J7-J8 — Adjamé (betweenness élevé) est le carrefour
-                    par lequel transitent la majorité des flux."),
-        lien_suivant("L'onglet Prédictions ML va plus loin — il anticipe.",
-                     "Prédictions ML")
+        )
       ),
 
-      # ===== ONGLET 5 — ML ================================================
+      # ====================================================================
+      # ONGLET 6 — ML : 3 sous-pages (menuSubItem)
+      # ====================================================================
       tabItem(
-        tabName = "ml",
-        story_box(
-          text = "<strong>Peut-on anticiper la congestion ?</strong>
-                  Les modèles ML prédisent votre temps de trajet à partir
-                  de l'heure et de l'origine."
-        ),
+        tabName = "ml_pred",
         page_header(
-          "Prédire et anticiper — La data science au service du citoyen",
-          "Protocole train/test 80/20 • set.seed(42) • 4 modèles comparés"
+          title = "Prédire un temps de trajet",
+          meta  = "Random Forest · IC 95 % sur la prédiction"
         ),
         fluidRow(
           column(4,
-            box(width = 12, title = "🔮 Faire une prédiction",
-                status = "warning",
-                selectInput("ml_depart",  "Départ",  choices = NULL),
-                selectInput("ml_arrivee", "Arrivée", choices = NULL),
-                sliderInput("ml_heure", "Heure de départ",
-                            min = 0, max = 23, value = 8, step = 1),
-                selectInput("ml_modele", "Modèle",
-                  choices = c("Random Forest" = "rf",
-                              "Régression linéaire" = "lm",
-                              "Arbre de décision"   = "rpart",
-                              "k-NN" = "knn")),
-                actionButton("ml_predire", "🚀 Prédire", class = "btn-primary"),
-                uiOutput("resultat_prediction")
+            card(
+              title = "Paramètres du trajet",
+              selectInput("ml_depart",  "Départ",  choices = NULL),
+              selectInput("ml_arrivee", "Arrivée", choices = NULL),
+              sliderInput("ml_heure",   "Heure de départ",
+                          min = 0, max = 23, value = 8, step = 1),
+              selectInput("ml_modele",  "Modèle",
+                choices = c("Random Forest"        = "rf",
+                            "Régression linéaire"  = "lm",
+                            "Arbre de décision"    = "rpart",
+                            "k-NN"                 = "knn")),
+              actionButton("ml_predire", "Prédire", class = "btn-pri btn-block")
             )
           ),
           column(8,
-            tabsetPanel(
-              tabPanel("Importance variables",
-                       plotOutput("importance_vars", height = 400)),
-              tabPanel("Comparaison modèles",
-                       tableOutput("comparaison_modeles")),
-              tabPanel("Clustering communes",
-                       plotOutput("clustering_acp", height = 400))
-            )
-          )
-        ),
-        interp_box(textOutput("insight_ml", inline = TRUE)),
-        lien_suivant("Place à la transparence — voici les données brutes.",
-                     "Explorer les données")
-      ),
-
-      # ===== ONGLET 6 — DONNÉES ===========================================
-      tabItem(
-        tabName = "donnees",
-        story_box(
-          text = "<strong>D'où viennent les chiffres ?</strong>
-                  Cet onglet montre les données brutes, filtrables et téléchargeables."
-        ),
-        page_header(
-          "Les données brutes — Source de transparence et reproductibilité",
-          "readr::read_csv() → dplyr::left_join() → DT::datatable()"
-        ),
-        fluidRow(
-          column(3, kpi_card("Lignes (filtrées)", textOutput("dt_n_lignes", inline = TRUE),
-                             color = COULEURS$orange, icon = "📊", delta_dir = "neutral")),
-          column(3, kpi_card("Vitesse moyenne", textOutput("dt_vit_moy", inline = TRUE),
-                             color = COULEURS$vert, icon = "🚗", delta_dir = "neutral")),
-          column(3, kpi_card("% bloqué", textOutput("dt_pct_bloque", inline = TRUE),
-                             color = COULEURS$rouge, icon = "🔴", delta_dir = "neutral")),
-          column(3, kpi_card("Axe le pire", textOutput("dt_axe_pire", inline = TRUE),
-                             color = COULEURS$jaune, icon = "⚠️", delta_dir = "neutral"))
-        ),
-        fluidRow(
-          column(12,
-            box(width = 12, status = "primary",
-                fluidRow(
-                  column(4, selectInput("dt_dataset", "Dataset",
-                    choices = c("flux_enrichi (principal)" = "flux",
-                                "communes (Wikipedia)"     = "communes",
-                                "GTFS arrêts"               = "stops"))),
-                  column(4, selectInput("dt_filtre_commune", "Commune",
-                    choices = c("Toutes" = "all"))),
-                  column(4, sliderInput("dt_filtre_heure", "Plage horaire",
-                    min = 0, max = 23, value = c(0, 23)))
-                ),
-                downloadButton("dt_export", "⬇ Télécharger CSV (filtré)",
-                               class = "btn-success"),
-                tags$hr(),
-                DTOutput("table_principale"),
-                tags$div(style = "font-size:10px;color:#718096;margin-top:10px;",
-                         textOutput("source_note"))
+            conditionalPanel(
+              condition = "input.ml_predire > 0",
+              uiOutput("resultat_prediction")
+            ),
+            conditionalPanel(
+              condition = "input.ml_predire == 0",
+              tags$div(class = "empty-state",
+                tags$p("Renseignez un trajet à gauche puis cliquez sur Prédire.")
+              )
             )
           )
         )
+      ),
+
+      tabItem(
+        tabName = "ml_eval",
+        page_header(
+          title = "Performance des modèles",
+          meta  = "RMSE · R² · Importance des variables"
+        ),
+        fluidRow(
+          column(6, card(title = "Comparaison RMSE / R²",
+                         tableOutput("comparaison_modeles"))),
+          column(6, card(title = "Importance des variables (Random Forest)",
+                         withSpinner(plotOutput("importance_vars", height = 360))))
+        )
+      ),
+
+      tabItem(
+        tabName = "ml_clust",
+        page_header(
+          title = "Profils des communes",
+          meta  = "k-means · ACP · 3 clusters"
+        ),
+        fluidRow(
+          column(3, wellPanel(
+            sliderInput("kmeans_k", "Nombre de clusters",
+                        min = 2, max = 6, value = 3)
+          )),
+          column(9, withSpinner(plotOutput("clustering_acp", height = 480)))
+        )
+      ),
+
+      # ====================================================================
+      # ONGLET 7 — DONNÉES (P1)
+      # ====================================================================
+      tabItem(
+        tabName = "donnees",
+        page_header(
+          title = "Explorer les données brutes",
+          meta  = "readr · dplyr · DT · Téléchargement CSV"
+        ),
+        section_subtitle(
+          "Transparence et reproductibilité : voici les données qui ont
+           produit toutes les analyses précédentes."
+        ),
+
+        wellPanel(class = "well-min",
+          fluidRow(
+            column(4, selectInput("dt_dataset", "Dataset",
+              choices = c("flux_enrichi" = "flux",
+                          "Communes (Wikipedia)"  = "communes",
+                          "Arrêts GTFS"           = "stops"))),
+            column(4, selectInput("dt_filtre_commune", "Commune",
+              choices = c("Toutes" = "all"))),
+            column(4, sliderInput("dt_filtre_heure", "Plage horaire",
+              min = 0, max = 23, value = c(0, 23)))
+          ),
+          downloadButton("dt_export", "Télécharger CSV", class = "btn-pri")
+        ),
+
+        fluidRow(
+          column(3, kpi_card("Lignes",
+            textOutput("dt_n_lignes", inline = TRUE), accent = COULEURS$orange)),
+          column(3, kpi_card("Vitesse moy.",
+            textOutput("dt_vit_moy", inline = TRUE), accent = COULEURS$vert)),
+          column(3, kpi_card("% bloqué",
+            textOutput("dt_pct_bloque", inline = TRUE), accent = COULEURS$rouge)),
+          column(3, kpi_card("Pire axe",
+            textOutput("dt_axe_pire", inline = TRUE), accent = COULEURS$jaune))
+        ),
+
+        card(DTOutput("table_principale")),
+        tags$p(class = "source-note", textOutput("source_note", inline = TRUE))
+      ),
+
+      # ====================================================================
+      # ONGLET 8 — RECOMMANDATIONS (P1)
+      # ====================================================================
+      tabItem(
+        tabName = "recommandations",
+        page_header(
+          title = "Recommandations actionnables",
+          meta  = "Synthèse pour les décideurs · ONG Abidjan Mobilité Durable"
+        ),
+        section_subtitle(
+          "Cinq mesures concrètes, classées par impact attendu et faisabilité,
+           découlant directement des analyses précédentes."
+        ),
+        fluidRow(
+          column(12, card(
+            title = "Tableau des recommandations",
+            withSpinner(tableOutput("table_reco"), type = 6)
+          ))
+        ),
+        note_box("Les recommandations s'appuient sur les résultats des onglets
+                  Réseau (commune critique), ML (variables explicatives) et
+                  Exploration (variabilité des temps).")
       )
 
     ) # /tabItems

@@ -1,7 +1,15 @@
 # ==============================================================================
 # OBSERVATOIRE DE LA MOBILITÉ — GRAND ABIDJAN
 # global.R — Chargé UNE SEULE FOIS au démarrage de l'app
-# Personne 2 — Shiny + UI
+#
+# Équipe :
+#   • CAMARA Massaram (P2) — 4 onglets : Accueil, Carte, Trafic, Exploration
+#   • LOGBO Axelle    (P1) — 4 onglets : Réseau, ML, Données, Recommandations
+#
+# Formation : M1 Data Science et IA — UFHB Abidjan
+# Encadrant : Dr. Laurent Rouvière (Université Rennes 2)
+# Client    : ONG Abidjan Mobilité Durable
+# Deadline  : 27 mai 2025
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
@@ -10,8 +18,10 @@
 # Core Shiny
 library(shiny)
 library(shinydashboard)
+library(shinyWidgets)        # pickerInput, awesomeRadio, etc.
 library(shinyjs)
-library(waiter)
+library(shinycssloaders)     # withSpinner
+library(waiter)              # écran chargement démarrage
 
 # Manipulation données
 library(dplyr)
@@ -19,6 +29,7 @@ library(tidyr)
 library(readr)
 library(stringr)
 library(lubridate)
+library(purrr)
 
 # Visualisation
 library(ggplot2)
@@ -29,26 +40,26 @@ library(visNetwork)
 
 # Spatial / Routing
 library(sf)
-# library(osrm)   # à activer quand on fait l'itinéraire
+# library(osrm)   # à activer J4 pour itinéraires
 
 # Réseau
 library(igraph)
 
 # ------------------------------------------------------------------------------
-# 2. CONSTANTES — Palette CI + paramètres app
+# 2. PALETTE — Couleurs CI sobres
 # ------------------------------------------------------------------------------
 COULEURS <- list(
-  orange  = "#F47920",   # Orange CI
-  vert    = "#009A44",   # Vert CI
-  gris    = "#2C3E50",
-  bleu    = "#2980B9",
-  rouge   = "#E74C3C",
-  jaune   = "#F39C12",
-  violet  = "#8E44AD",
-  bg      = "#F1F4F8",
+  orange  = "#F47920",   # Orange CI — accent principal
+  vert    = "#009A44",   # Vert CI — succès
+  gris    = "#0A0A0A",   # Texte principal (presque noir)
+  muted   = "#71717A",   # Texte secondaire
+  bleu    = "#2980B9",   # Info (IC 95%)
+  rouge   = "#DC2626",   # Danger sobre
+  jaune   = "#F39C12",   # Warning
+  bg      = "#FAFAFA",   # Fond app
   white   = "#FFFFFF",
-  border  = "#E2E8F0",
-  muted   = "#718096"
+  border  = "#E4E4E7",   # Bordures fines
+  sidebar = "#0A0A0A"    # Sidebar dark
 )
 
 # Couleurs par niveau de congestion
@@ -60,20 +71,17 @@ COUL_CONG <- c(
 )
 
 # Centre carte Abidjan
-ABIDJAN_LAT <- 5.345
-ABIDJAN_LON <- -4.024
+ABIDJAN_LAT  <- 5.345
+ABIDJAN_LON  <- -4.024
 ABIDJAN_ZOOM <- 11
 
 # ------------------------------------------------------------------------------
 # 3. CHARGEMENT DES DONNÉES (avec garde-fous tant que P1 n'a pas livré)
 # ------------------------------------------------------------------------------
-# NOTE : Tant que Personne 1 n'a pas livré les fichiers, on utilise des stubs.
-#        Quand les vrais fichiers seront dans data/processed/, on bascule.
-
 flux_enrichi <- tryCatch(
   read_csv("data/processed/flux_enrichi.csv", show_col_types = FALSE),
   error = function(e) {
-    message("⚠️ flux_enrichi.csv pas encore livré — stub utilisé")
+    message("⚠️  flux_enrichi.csv pas encore livré — stub utilisé")
     tibble(
       axe_id = character(), commune_nom = character(),
       heure = integer(), jour = as.Date(character()),
@@ -87,7 +95,7 @@ flux_enrichi <- tryCatch(
 communes_wiki <- tryCatch(
   read_csv("data/processed/communes_clean.csv", show_col_types = FALSE),
   error = function(e) {
-    message("⚠️ communes_clean.csv pas encore livré — stub utilisé")
+    message("⚠️  communes_clean.csv pas encore livré — stub utilisé")
     tibble(commune = character(), population = integer(),
            superficie = double(), zone = character())
   }
@@ -96,7 +104,7 @@ communes_wiki <- tryCatch(
 graphe_communes <- tryCatch(
   readRDS("data/processed/graphe_communes.rds"),
   error = function(e) {
-    message("⚠️ graphe_communes.rds pas encore livré")
+    message("⚠️  graphe_communes.rds pas encore livré")
     NULL
   }
 )
@@ -104,82 +112,133 @@ graphe_communes <- tryCatch(
 mod_rf <- tryCatch(
   readRDS("models/mod_rf_vitesse.rds"),
   error = function(e) {
-    message("⚠️ mod_rf_vitesse.rds pas encore livré")
+    message("⚠️  mod_rf_vitesse.rds pas encore livré")
     NULL
   }
 )
 
 # ------------------------------------------------------------------------------
-# 4. COMPOSANTS UI RÉUTILISABLES
+# 4. HELPERS STATISTIQUES — IC 95% (Chapitre 11)
 # ------------------------------------------------------------------------------
 
-#' KPI Card — carte indicateur clé avec barre colorée en haut
-kpi_card <- function(label, value, delta = NULL, color = COULEURS$orange,
-                     icon = NULL, delta_dir = c("up", "dn", "neutral")) {
-  delta_dir <- match.arg(delta_dir)
+#' Calcule l'IC 95% d'une moyenne.
+#' Formule : mean ± qnorm(0.975) × sd / sqrt(n)
+#' qnorm(0.975) = 1.96
+#'
+#' @param x vecteur numérique
+#' @return liste avec moy, se, ic_lo, ic_hi, n
+ic95 <- function(x) {
+  x <- x[!is.na(x)]
+  n <- length(x)
+  if (n < 2) {
+    return(list(moy = mean(x), se = NA, ic_lo = NA, ic_hi = NA, n = n))
+  }
+  moy <- mean(x)
+  se  <- sd(x) / sqrt(n)
+  list(
+    moy   = moy,
+    se    = se,
+    ic_lo = moy - qnorm(0.975) * se,
+    ic_hi = moy + qnorm(0.975) * se,
+    n     = n
+  )
+}
+
+#' Version dplyr — ajoute moy/se/ic_lo/ic_hi sur un summarise
+#' Usage : df |> group_by(commune) |> summarise(ic_summary(vitesse_kmh))
+ic_summary <- function(x) {
+  x <- x[!is.na(x)]
+  n <- length(x)
+  moy <- mean(x)
+  se  <- if (n >= 2) sd(x) / sqrt(n) else NA_real_
+  tibble(
+    moy   = moy,
+    se    = se,
+    ic_lo = moy - qnorm(0.975) * se,
+    ic_hi = moy + qnorm(0.975) * se,
+    n     = n
+  )
+}
+
+# ------------------------------------------------------------------------------
+# 5. COMPOSANTS UI MINIMALISTES
+# ------------------------------------------------------------------------------
+
+#' KPI card — minimaliste, pas d'icônes décoratives
+kpi_card <- function(label, value, hint = NULL, accent = NULL) {
   tags$div(
     class = "kpi",
-    style = paste0("--a:", color, ";"),
-    if (!is.null(icon)) tags$div(class = "ki", icon),
-    tags$div(class = "kl", toupper(label)),
-    tags$div(class = "kv", value),
-    if (!is.null(delta)) tags$div(class = paste("kd", delta_dir), delta)
+    style = if (!is.null(accent)) paste0("--a:", accent, ";") else NULL,
+    tags$div(class = "kpi-label", label),
+    tags$div(class = "kpi-value", value),
+    if (!is.null(hint)) tags$div(class = "kpi-hint", hint)
   )
 }
 
-#' Story box — encadré narratif orange/vert (accroche d'onglet)
-story_box <- function(text, insight = NULL) {
+#' Sous-titre sobre (remplace les story_box dégoulinants)
+section_subtitle <- function(text) {
+  tags$p(class = "section-subtitle", text)
+}
+
+#' Note d'interprétation (sobre, gris clair, sans emoji)
+note_box <- function(text) {
   tags$div(
-    class = "story",
-    tags$span(class = "story-ico", "📖"),
-    tags$span(
-      class = "story-txt",
-      HTML(text),
-      if (!is.null(insight)) tags$span(class = "story-insight", insight)
-    )
+    class = "note",
+    tags$strong("Lecture · "),
+    if (is.character(text)) HTML(text) else text
   )
 }
 
-#' Interp box — encadré bleu d'interprétation sous un graphe
-interp_box <- function(text) {
-  tags$div(
-    class = "interp",
-    HTML(paste0("💡 <strong>À lire :</strong> ", text))
-  )
-}
-
-#' Page header — titre + sous-titre + actions (boutons)
-page_header <- function(title, subtitle = NULL, actions = NULL) {
+#' Page header simple — titre + meta
+page_header <- function(title, meta = NULL) {
   tags$div(
     class = "ph",
-    tags$div(
-      tags$div(class = "pt", title),
-      if (!is.null(subtitle)) tags$div(class = "ps", subtitle)
-    ),
-    if (!is.null(actions)) tags$div(class = "pa", actions)
+    tags$h2(class = "ph-title", title),
+    if (!is.null(meta)) tags$p(class = "ph-meta", meta)
   )
 }
 
-#' Lien narratif vers l'onglet suivant (en bas d'onglet)
-lien_suivant <- function(texte, onglet_cible) {
+#' Card minimaliste (remplace les box() shinydashboard pleines de couleurs)
+card <- function(..., title = NULL, padded = TRUE) {
   tags$div(
-    class = "story",
-    style = "margin-top:14px;border-color:rgba(0,154,68,0.25);
-             background:linear-gradient(135deg,rgba(0,154,68,0.06),rgba(244,121,32,0.04));",
-    tags$span(class = "story-ico", "→"),
-    tags$span(class = "story-txt", HTML(texte)),
-    tags$span(
-      style = "margin-left:8px;color:#F47920;font-weight:600;font-size:11px;",
-      paste("→", onglet_cible)
+    class = "card-min",
+    if (!is.null(title)) tags$div(class = "card-min-header", title),
+    tags$div(
+      class = if (padded) "card-min-body" else "card-min-body-flush",
+      ...
     )
   )
 }
 
+#' Affichage d'un IC 95% sous forme texte court
+format_ic <- function(ic, unit = "", digits = 1) {
+  if (is.na(ic$ic_lo)) return("—")
+  sprintf("[%.*f ; %.*f] %s",
+          digits, ic$ic_lo, digits, ic$ic_hi, unit)
+}
+
 # ------------------------------------------------------------------------------
-# 5. INFOS DE DÉPLOIEMENT
+# 6. INFOS DE DÉPLOIEMENT
 # ------------------------------------------------------------------------------
-APP_VERSION   <- "0.1.0-J1"
+APP_VERSION   <- "0.2.0-CDC-v7"
 APP_DEPLOIEE  <- "https://[à-renseigner].shinyapps.io/mobilite_abidjan/"
 RAPPORT_URL   <- "rapport.html"
 
+EQUIPE <- list(
+  list(nom = "CAMARA Massaram",  role = "P2 — Accueil, Carte, Trafic, Exploration"),
+  list(nom = "LOGBO Axelle",     role = "P1 — Réseau, ML, Données, Recommandations")
+)
+
+loader_carte <- Waiter$new(
+  id = "carte_principale",
+  html = tagList(
+    tags$div(class = "boot-local",
+             tags$p("Calcul de l'itinéraire"),
+             tags$div(class = "bar-wrap",
+                      tags$div(class = "bar-fill-load")
+             )
+    )
+  ),
+  color = "rgba(255, 255, 255, 0.85)"
+)
 message("✅ global.R chargé — version ", APP_VERSION)
