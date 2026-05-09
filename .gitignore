@@ -38,3 +38,4 @@ rsconnect/
 # ----- IDE -----
 .vscode/
 .idea/
+.positai
