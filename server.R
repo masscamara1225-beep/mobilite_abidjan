@@ -10,8 +10,8 @@ server <- function(input, output, session) {
   # ----------------------------------------------------------------------------
   observe({
     if (nrow(flux_enrichi) > 0) {
-      communes_dispo <- sort(unique(flux_enrichi$commune_nom))
-      axes_dispo     <- sort(unique(flux_enrichi$axe_id))
+      communes_dispo <- sort(unique(flux_enrichi$commune))
+      axes_dispo     <- sort(unique(flux_enrichi$id_axe))
 
       updateSelectInput(session, "filtre_commune",
                         choices = c("Toutes" = "all", communes_dispo))
@@ -50,7 +50,7 @@ server <- function(input, output, session) {
     if (nrow(flux_enrichi) == 0) return("—")
     n_bloques <- flux_enrichi |>
       filter(niveau_cong == "Bloqué") |>
-      pull(axe_id) |>
+      pull(id_axe) |>
       n_distinct()
     as.character(n_bloques)
   })
@@ -62,14 +62,14 @@ server <- function(input, output, session) {
                       tags$p("En attente du dataset (Personne 1).")))
     }
     df <- flux_enrichi |>
-      group_by(commune_nom) |>
+      group_by(commune) |>
       summarise(indice = mean(indice_cong, na.rm = TRUE), .groups = "drop") |>
       arrange(indice) |>
       head(8)
 
     tags$div(class = "bars",
       lapply(seq_len(nrow(df)), function(i) {
-        com   <- df$commune_nom[i]
+        com   <- df$commune[i]
         ind   <- df$indice[i]
         pct   <- min(100, max(5, round((1 - ind) * 100)))
         coul  <- if (ind < 0.3) COULEURS$rouge
@@ -126,8 +126,8 @@ server <- function(input, output, session) {
     req(length(input$trafic_communes) > 0)
 
     flux_enrichi |>
-      filter(commune_nom %in% input$trafic_communes) |>
-      group_by(commune_nom, heure) |>
+      filter(commune %in% input$trafic_communes) |>
+      group_by(commune, heure) |>
       summarise(ic_summary(.data[[input$trafic_y]]), .groups = "drop")
   })
 
@@ -141,7 +141,7 @@ server <- function(input, output, session) {
     label_y <- if (input$trafic_y == "vitesse_kmh") "Vitesse (km/h)"
                else "Indice de congestion"
 
-    p <- plot_ly(df, x = ~heure, color = ~commune_nom,
+    p <- plot_ly(df, x = ~heure, color = ~commune,
                  colors = "Set2") |>
       add_ribbons(ymin = ~ic_lo, ymax = ~ic_hi,
                   line = list(width = 0),
@@ -164,7 +164,7 @@ server <- function(input, output, session) {
     if (nrow(df) == 0) return("Aucune donnée pour la sélection")
     pire <- df |> arrange(moy) |> slice(1)
     sprintf("À %dh, %s atteint sa valeur minimale (%.1f). IC 95 %% : [%.1f ; %.1f].",
-            pire$heure, pire$commune_nom, pire$moy, pire$ic_lo, pire$ic_hi)
+            pire$heure, pire$commune, pire$moy, pire$ic_lo, pire$ic_hi)
   })
 
   output$heatmap_hebdo <- renderPlotly({
@@ -172,10 +172,10 @@ server <- function(input, output, session) {
                   "Dataset pas encore disponible"))
     fn <- match.fun(input$heat_aggreg)
     df <- flux_enrichi |>
-      group_by(commune_nom, heure) |>
+      group_by(commune, heure) |>
       summarise(val = fn(vitesse_kmh, na.rm = TRUE), .groups = "drop")
 
-    plot_ly(df, x = ~heure, y = ~commune_nom, z = ~val,
+    plot_ly(df, x = ~heure, y = ~commune, z = ~val,
             type = "heatmap", colors = "RdYlGn",
             hovertemplate = "Commune: %{y}<br>Heure: %{x}h<br>Vitesse: %{z:.1f}<extra></extra>") |>
       layout(
@@ -192,13 +192,13 @@ server <- function(input, output, session) {
                   "Sélectionnez au moins un axe"))
 
     df <- flux_enrichi |>
-      filter(axe_id %in% input$comp_axes,
+      filter(id_axe %in% input$comp_axes,
              heure == input$comp_heure) |>
-      group_by(axe_id) |>
+      group_by(id_axe) |>
       summarise(v = mean(vitesse_kmh, na.rm = TRUE), .groups = "drop") |>
       arrange(v)
 
-    plot_ly(df, x = ~v, y = ~reorder(axe_id, v),
+    plot_ly(df, x = ~v, y = ~reorder(id_axe, v),
             type = "bar", orientation = "h",
             marker = list(color = COULEURS$orange)) |>
       layout(
@@ -225,8 +225,8 @@ server <- function(input, output, session) {
     validate(need(nrow(flux_enrichi) > 0,
                   "Dataset pas encore disponible"))
     df <- data_explo()
-    p <- ggplot(df, aes(x = reorder(commune_nom, vitesse_kmh, FUN = median),
-                        y = vitesse_kmh, fill = commune_nom)) +
+    p <- ggplot(df, aes(x = reorder(commune, vitesse_kmh, FUN = median),
+                        y = vitesse_kmh, fill = commune)) +
       geom_boxplot(outlier.shape = if (input$explo_outliers) 16 else NA,
                    outlier.alpha = 0.3) +
       coord_flip() +
@@ -243,7 +243,7 @@ server <- function(input, output, session) {
                   "Dataset pas encore disponible"))
     req(input$explo_commune)
 
-    df <- flux_enrichi |> filter(commune_nom == input$explo_commune)
+    df <- flux_enrichi |> filter(commune == input$explo_commune)
     ic <- ic95(df$vitesse_kmh)
 
     p <- ggplot(df, aes(x = vitesse_kmh)) +
@@ -265,7 +265,7 @@ server <- function(input, output, session) {
   output$expl_ic_text <- renderText({
     if (nrow(flux_enrichi) == 0 || !nzchar(input$explo_commune)) return("—")
     ic <- ic95(flux_enrichi |>
-                 filter(commune_nom == input$explo_commune) |>
+                 filter(commune == input$explo_commune) |>
                  pull(vitesse_kmh))
     format_ic(ic, "km/h")
   })
@@ -275,10 +275,10 @@ server <- function(input, output, session) {
                   "Dataset pas encore disponible"))
 
     stats <- flux_enrichi |>
-      group_by(commune_nom) |>
+      group_by(commune) |>
       summarise(ic_summary(vitesse_kmh), .groups = "drop") |>
       mutate(across(c(moy, se, ic_lo, ic_hi), ~ round(.x, 2))) |>
-      transmute(Commune = commune_nom,
+      transmute(Commune = commune,
                 `Moyenne (km/h)` = moy,
                 `IC 95 % bas`    = ic_lo,
                 `IC 95 % haut`   = ic_hi,
@@ -389,7 +389,7 @@ server <- function(input, output, session) {
 
     if (input$dt_dataset == "flux" && nrow(df) > 0) {
       if (input$dt_filtre_commune != "all") {
-        df <- df |> filter(commune_nom == input$dt_filtre_commune)
+        df <- df |> filter(commune == input$dt_filtre_commune)
       }
       df <- df |> filter(heure >= input$dt_filtre_heure[1],
                          heure <= input$dt_filtre_heure[2])
@@ -420,13 +420,13 @@ server <- function(input, output, session) {
   })
   output$dt_axe_pire <- renderText({
     df <- donnees_filtrees()
-    if (!"axe_id" %in% names(df) || nrow(df) == 0) return("—")
+    if (!"id_axe" %in% names(df) || nrow(df) == 0) return("—")
     df |>
-      group_by(axe_id) |>
+      group_by(id_axe) |>
       summarise(v = mean(vitesse_kmh, na.rm = TRUE), .groups = "drop") |>
       arrange(v) |>
       slice(1) |>
-      pull(axe_id)
+      pull(id_axe)
   })
 
   output$dt_export <- downloadHandler(
