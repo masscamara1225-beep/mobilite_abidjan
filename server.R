@@ -1,22 +1,29 @@
 # ==============================================================================
 # OBSERVATOIRE DE LA MOBILITÉ — GRAND ABIDJAN
-# server.R — Logique réactive
-# Personne 2 — Shiny + UI
+# server.R — Logique réactive (CDC v7 — 8 onglets)
 # ==============================================================================
 
 server <- function(input, output, session) {
-
+  waiter_hide()
   # ----------------------------------------------------------------------------
   # MISE À JOUR DES CHOIX DYNAMIQUES (au démarrage)
   # ----------------------------------------------------------------------------
   observe({
     if (nrow(flux_enrichi) > 0) {
-      communes_dispo <- sort(unique(flux_enrichi$commune_nom))
+      communes_dispo <- sort(unique(flux_enrichi$commune))
+      axes_dispo     <- sort(unique(flux_enrichi$id_axe))
+
       updateSelectInput(session, "filtre_commune",
                         choices = c("Toutes" = "all", communes_dispo))
-      updateSelectInput(session, "trafic_communes",
+      updatePickerInput(session, "trafic_communes",
                         choices = communes_dispo,
                         selected = head(communes_dispo, 3))
+      updateCheckboxGroupInput(session, "comp_axes",
+                               choices = axes_dispo,
+                               selected = head(axes_dispo, 5))
+      updateSelectInput(session, "explo_commune",
+                        choices = communes_dispo,
+                        selected = communes_dispo[1])
       updateSelectInput(session, "ml_depart",  choices = communes_dispo)
       updateSelectInput(session, "ml_arrivee", choices = communes_dispo,
                         selected = communes_dispo[2])
@@ -29,156 +36,351 @@ server <- function(input, output, session) {
   # ONGLET 1 — ACCUEIL
   # ============================================================================
 
-  # Bouton "Voir la carte" → navigation
+  # Boutons navigation
   observeEvent(input$go_carte, {
     updateTabItems(session, "main_tabs", "carte")
   })
+  observeEvent(input$go_rapport, {
+    showNotification("Rapport Quarto à générer (rapport.qmd)",
+                     type = "message")
+  })
 
-  # État temps réel — barres de congestion par commune (TODO J2)
+  # KPI dynamique : axes bloqués actuellement
+  output$kpi_axes_bloques <- renderText({
+    if (nrow(flux_enrichi) == 0) return("—")
+    n_bloques <- flux_enrichi |>
+      filter(niveau_cong == "Bloqué") |>
+      pull(id_axe) |>
+      n_distinct()
+    as.character(n_bloques)
+  })
+
+  # État temps réel — barres minimalistes par commune
   output$etat_temps_reel <- renderUI({
     if (nrow(flux_enrichi) == 0) {
-      return(tags$div(style = "padding:14px;color:#94A3B8;font-style:italic;",
-                      "⏳ En attente du dataset flux_enrichi.csv (Personne 1)."))
+      return(tags$div(class = "empty-state",
+                      tags$p("En attente du dataset (Personne 1).")))
     }
-    # TODO J2 : calculer le niveau actuel par commune et afficher des barres
-    tags$div("TODO — barres de congestion par commune")
+    df <- flux_enrichi |>
+      group_by(commune) |>
+      summarise(indice = mean(indice_cong, na.rm = TRUE), .groups = "drop") |>
+      arrange(indice) |>
+      head(8)
+
+    tags$div(class = "bars",
+      lapply(seq_len(nrow(df)), function(i) {
+        com   <- df$commune[i]
+        ind   <- df$indice[i]
+        pct   <- min(100, max(5, round((1 - ind) * 100)))
+        coul  <- if (ind < 0.3) COULEURS$rouge
+                 else if (ind < 0.5) COULEURS$orange
+                 else if (ind < 0.8) COULEURS$jaune
+                 else COULEURS$vert
+        tags$div(class = "bar-row",
+          tags$span(class = "bar-label", com),
+          tags$div(class = "bar-track",
+                   tags$div(class = "bar-fill",
+                            style = sprintf("width:%d%%;background:%s;", pct, coul))),
+          tags$span(class = "bar-value", sprintf("%d %%", pct))
+        )
+      })
+    )
   })
 
   # ============================================================================
   # ONGLET 2 — CARTE
   # ============================================================================
 
-  # Carte de base — Abidjan vue d'ensemble (J3 : ajouter OSM + arrêts)
   output$carte_principale <- renderLeaflet({
     leaflet() |>
       addProviderTiles(providers$CartoDB.Positron) |>
-      setView(lng = ABIDJAN_LON, lat = ABIDJAN_LAT, zoom = ABIDJAN_ZOOM) |>
-      addControl(html = "<strong>Carte d'Abidjan</strong><br>
-                          <small>TODO J3 — réseau OSM + arrêts GTFS</small>",
-                 position = "topright")
+      setView(lng = ABIDJAN_LON, lat = ABIDJAN_LAT, zoom = ABIDJAN_ZOOM)
+    # TODO J3 — réseau OSM (sf) coloré par indice_cong
+    # TODO J3 — addMarkerCluster pour les arrêts GTFS
   })
 
   # Itinéraire (TODO J4 — osrm::osrmRoute)
   observeEvent(input$btn_itin, {
+    req(nzchar(input$itin_depart), nzchar(input$itin_arrivee))
+    
+    loader_carte$show()
+    Sys.sleep(1.2)   # simule le temps d'appel osrm — à enlever quand connecté
+    loader_carte$hide()
+    
     output$resultat_itin <- renderUI({
-      tags$div(style = "padding:8px;background:#F1F4F8;border-radius:6px;
-                        margin-top:10px;font-size:11px;",
-               "TODO J4 — calcul osrm::osrmRoute() entre ",
-               tags$strong(input$itin_depart), " et ",
-               tags$strong(input$itin_arrivee))
+      tags$div(class = "itin-result",
+               tags$p(tags$strong(input$itin_depart), " → ",
+                      tags$strong(input$itin_arrivee)),
+               tags$p(class = "muted-small", "Calcul osrm — à connecter J4")
+      )
     })
   })
 
   # ============================================================================
-  # ONGLET 3 — TRAFIC
+  # ONGLET 3 — TRAFIC + IC 95%
   # ============================================================================
+
+  # Données filtrées pour la courbe journalière
+  data_courbe <- reactive({
+    req(nrow(flux_enrichi) > 0)
+    req(length(input$trafic_communes) > 0)
+
+    flux_enrichi |>
+      filter(commune %in% input$trafic_communes) |>
+      group_by(commune, heure) |>
+      summarise(ic_summary(.data[[input$trafic_y]]), .groups = "drop")
+  })
 
   output$courbe_journaliere <- renderPlotly({
     validate(need(nrow(flux_enrichi) > 0,
-                  "⏳ Dataset pas encore disponible"))
+                  "Dataset pas encore disponible (Personne 1)"))
     validate(need(length(input$trafic_communes) > 0,
                   "Sélectionnez au moins une commune"))
-    # TODO J5
-    plot_ly(type = "scatter", mode = "lines") |>
-      layout(title = "TODO J5 — courbe vitesse/heure")
+
+    df <- data_courbe()
+    label_y <- if (input$trafic_y == "vitesse_kmh") "Vitesse (km/h)"
+               else "Indice de congestion"
+
+    p <- plot_ly(df, x = ~heure, color = ~commune,
+                 colors = "Set2") |>
+      add_ribbons(ymin = ~ic_lo, ymax = ~ic_hi,
+                  line = list(width = 0),
+                  opacity = 0.2, showlegend = FALSE,
+                  name = "IC 95%") |>
+      add_lines(y = ~moy, line = list(width = 2.5)) |>
+      layout(
+        xaxis = list(title = "Heure", dtick = 2),
+        yaxis = list(title = label_y),
+        hovermode = "x unified",
+        plot_bgcolor = "#FFFFFF", paper_bgcolor = "#FFFFFF",
+        margin = list(t = 30, l = 50, r = 30, b = 40)
+      )
+    p
+  })
+
+  output$insight_courbe <- renderText({
+    if (nrow(flux_enrichi) == 0) return("Données non disponibles")
+    df <- data_courbe()
+    if (nrow(df) == 0) return("Aucune donnée pour la sélection")
+    pire <- df |> arrange(moy) |> slice(1)
+    sprintf("À %dh, %s atteint sa valeur minimale (%.1f). IC 95 %% : [%.1f ; %.1f].",
+            pire$heure, pire$commune, pire$moy, pire$ic_lo, pire$ic_hi)
   })
 
   output$heatmap_hebdo <- renderPlotly({
     validate(need(nrow(flux_enrichi) > 0,
-                  "⏳ Dataset pas encore disponible"))
-    # TODO J6
-    plot_ly() |> layout(title = "TODO J6 — heatmap commune × heure")
+                  "Dataset pas encore disponible"))
+    fn <- match.fun(input$heat_aggreg)
+    df <- flux_enrichi |>
+      group_by(commune, heure) |>
+      summarise(val = fn(vitesse_kmh, na.rm = TRUE), .groups = "drop")
+
+    plot_ly(df, x = ~heure, y = ~commune, z = ~val,
+            type = "heatmap", colors = "RdYlGn",
+            hovertemplate = "Commune: %{y}<br>Heure: %{x}h<br>Vitesse: %{z:.1f}<extra></extra>") |>
+      layout(
+        xaxis = list(title = "Heure"),
+        yaxis = list(title = ""),
+        margin = list(t = 30, l = 100, r = 30, b = 40)
+      )
   })
 
   output$barplot_pires <- renderPlotly({
     validate(need(nrow(flux_enrichi) > 0,
-                  "⏳ Dataset pas encore disponible"))
-    plot_ly() |> layout(title = "TODO J6 — top 5 axes")
-  })
+                  "Dataset pas encore disponible"))
+    validate(need(length(input$comp_axes) > 0,
+                  "Sélectionnez au moins un axe"))
 
-  output$insight_trafic <- renderText({
-    "TODO J6 — phrase auto-générée selon les filtres (ex : Adjamé atteint sa vitesse min à 08h00)."
+    df <- flux_enrichi |>
+      filter(id_axe %in% input$comp_axes,
+             heure == input$comp_heure) |>
+      group_by(id_axe) |>
+      summarise(v = mean(vitesse_kmh, na.rm = TRUE), .groups = "drop") |>
+      arrange(v)
+
+    plot_ly(df, x = ~v, y = ~reorder(id_axe, v),
+            type = "bar", orientation = "h",
+            marker = list(color = COULEURS$orange)) |>
+      layout(
+        xaxis = list(title = "Vitesse (km/h)"),
+        yaxis = list(title = ""),
+        margin = list(t = 30, l = 120, r = 30, b = 40)
+      )
   })
 
   # ============================================================================
-  # ONGLET 4 — RÉSEAU
+  # ONGLET 4 — EXPLORATION EDA + IC 95%
   # ============================================================================
 
-  output$graphe_communes <- renderVisNetwork({
+  data_explo <- reactive({
+    req(nrow(flux_enrichi) > 0)
+    df <- flux_enrichi
+    if (input$explo_niveau != "Tous") {
+      df <- df |> filter(niveau_cong == input$explo_niveau)
+    }
+    df
+  })
+
+  output$expl_boxplot <- renderPlotly({
+    validate(need(nrow(flux_enrichi) > 0,
+                  "Dataset pas encore disponible"))
+    df <- data_explo()
+    p <- ggplot(df, aes(x = reorder(commune, vitesse_kmh, FUN = median),
+                        y = vitesse_kmh, fill = commune)) +
+      geom_boxplot(outlier.shape = if (input$explo_outliers) 16 else NA,
+                   outlier.alpha = 0.3) +
+      coord_flip() +
+      labs(x = NULL, y = "Vitesse (km/h)") +
+      theme_minimal(base_size = 11) +
+      theme(legend.position = "none",
+            panel.grid.minor = element_blank())
+    ggplotly(p) |>
+      layout(margin = list(t = 20, l = 100, r = 20, b = 40))
+  })
+
+  output$expl_histo <- renderPlotly({
+    validate(need(nrow(flux_enrichi) > 0,
+                  "Dataset pas encore disponible"))
+    req(input$explo_commune)
+
+    df <- flux_enrichi |> filter(commune == input$explo_commune)
+    ic <- ic95(df$vitesse_kmh)
+
+    p <- ggplot(df, aes(x = vitesse_kmh)) +
+      geom_histogram(bins = input$explo_bins,
+                     fill = COULEURS$orange, alpha = 0.8,
+                     color = "white") +
+      geom_vline(xintercept = ic$moy,
+                 color = COULEURS$gris, linewidth = 0.8) +
+      geom_vline(xintercept = c(ic$ic_lo, ic$ic_hi),
+                 color = COULEURS$bleu, linetype = "dashed",
+                 linewidth = 0.6) +
+      labs(x = "Vitesse (km/h)", y = "Effectif",
+           title = paste("Commune :", input$explo_commune)) +
+      theme_minimal(base_size = 11) +
+      theme(panel.grid.minor = element_blank())
+    ggplotly(p)
+  })
+
+  output$expl_ic_text <- renderText({
+    if (nrow(flux_enrichi) == 0 || !nzchar(input$explo_commune)) return("—")
+    ic <- ic95(flux_enrichi |>
+                 filter(commune == input$explo_commune) |>
+                 pull(vitesse_kmh))
+    format_ic(ic, "km/h")
+  })
+
+  output$expl_stats_table <- renderDT({
+    validate(need(nrow(flux_enrichi) > 0,
+                  "Dataset pas encore disponible"))
+
+    stats <- flux_enrichi |>
+      group_by(commune) |>
+      summarise(ic_summary(vitesse_kmh), .groups = "drop") |>
+      mutate(across(c(moy, se, ic_lo, ic_hi), ~ round(.x, 2))) |>
+      transmute(Commune = commune,
+                `Moyenne (km/h)` = moy,
+                `IC 95 % bas`    = ic_lo,
+                `IC 95 % haut`   = ic_hi,
+                `n observations` = n)
+
+    datatable(stats,
+              options = list(pageLength = 13, dom = 't', searching = FALSE),
+              rownames = FALSE)
+  })
+
+  # ============================================================================
+  # ONGLET 5 — RÉSEAU (P1)
+  # ============================================================================
+
+  output$graphe_communes_vis <- renderVisNetwork({
     if (is.null(graphe_communes)) {
       return(visNetwork(
-        nodes = data.frame(id = 1, label = "⏳ graphe_communes.rds non livré"),
-        edges = data.frame()
+        nodes = data.frame(id = 1, label = "graphe_communes.rds non livré"),
+        edges = data.frame(),
+        background = "#FAFAFA"
       ))
     }
-    # TODO J7 — vis_data <- toVisNetworkData(graphe_communes) ...
+    # TODO P1 J7 — toVisNetworkData(graphe_communes)
     visNetwork(
-      nodes = data.frame(id = 1, label = "TODO J7"),
+      nodes = data.frame(id = 1, label = "TODO P1"),
       edges = data.frame()
     )
   })
 
   output$tableau_metriques <- renderTable({
-    data.frame(Commune = "TODO J7",
-               Valeur  = "—")
+    data.frame(Commune = "TODO P1", Valeur = "—")
   })
 
-  output$modularite <- renderText({
-    "TODO J8 — modularité Louvain"
-  })
-
+  output$modularite <- renderText({ "Modularité Louvain : à venir (P1)" })
   output$communautes_resume <- renderUI({
-    tags$div("TODO J8 — badges par bassin")
+    tags$p(class = "muted-small", "Bassins Louvain — à venir (P1)")
   })
 
   # ============================================================================
-  # ONGLET 5 — ML
+  # ONGLET 6 — ML (3 sous-pages, P1)
   # ============================================================================
 
   observeEvent(input$ml_predire, {
+    shinyjs::disable("ml_predire")
+    
+    withProgress(message = "Prédiction en cours", value = 0, {
+      incProgress(0.3, detail = "Préparation des données…")
+      Sys.sleep(0.3)
+      incProgress(0.4, detail = "Application du modèle…")
+      Sys.sleep(0.3)
+      incProgress(0.3, detail = "Calcul de l'IC 95 %…")
+      Sys.sleep(0.2)
+    })
+    
+    shinyjs::enable("ml_predire")
+    showNotification("Prédiction calculée", type = "message", duration = 2)
+    
     output$resultat_prediction <- renderUI({
       if (is.null(mod_rf)) {
-        return(tags$div(style = "color:#E74C3C;",
-                        "⏳ mod_rf_vitesse.rds pas encore livré"))
+        return(card(title = "Prédiction",
+                    tags$p("Modèle pas encore livré (Personne 1).")))
       }
-      # TODO J9 — predict(mod_rf, newdata = ...)
-      tags$div(class = "kpi", style = "--a:#F47920;margin-top:14px;",
-               tags$div(class = "kl", "TEMPS ESTIMÉ"),
-               tags$div(class = "kv", "TODO J9"),
-               tags$div(class = "kd", paste("Modèle :", input$ml_modele)))
+      # TODO P1 J9 — predict(mod_rf, newdata = ...)
+      card(title = "Prédiction",
+        tags$p("De ", tags$strong(input$ml_depart),
+               " à ", tags$strong(input$ml_arrivee),
+               " · départ ", input$ml_heure, "h"),
+        tags$div(class = "kpi-value",
+          textOutput("ml_pred_value", inline = TRUE)),
+        tags$p(class = "muted-small",
+               "IC 95 % : ", textOutput("ml_pred_ic", inline = TRUE)))
     })
+    output$ml_pred_value <- renderText("— min")
+    output$ml_pred_ic    <- renderText("± à venir P1")
   })
 
   output$importance_vars <- renderPlot({
     plot.new()
-    title("TODO J9 — varImpPlot(mod_rf)")
+    title("Importance des variables — TODO P1 J9 (varImpPlot)")
   })
 
   output$comparaison_modeles <- renderTable({
     tryCatch(
       read_csv("outputs/comparaison_modeles.csv", show_col_types = FALSE),
       error = function(e) data.frame(
-        Modele = c("LM", "RF", "kNN", "rpart"),
-        RMSE   = "TODO J9",
-        R2     = "TODO J9"
+        Modele = c("Random Forest","Régression linéaire",
+                   "Arbre","k-NN"),
+        RMSE   = "TODO P1",
+        R2     = "TODO P1"
       )
     )
   })
 
   output$clustering_acp <- renderPlot({
     plot.new()
-    title("TODO J10 — k-means + ACP communes")
-  })
-
-  output$insight_ml <- renderText({
-    "TODO J9 — Pour ce trajet, partez avant 6h30..."
+    title("k-means + ACP — TODO P1 J11")
   })
 
   # ============================================================================
-  # ONGLET 6 — DONNÉES
+  # ONGLET 7 — DONNÉES (P1)
   # ============================================================================
 
-  # Dataset filtré (réactif)
   donnees_filtrees <- reactive({
     df <- switch(input$dt_dataset,
                  "flux"     = flux_enrichi,
@@ -187,7 +389,7 @@ server <- function(input, output, session) {
 
     if (input$dt_dataset == "flux" && nrow(df) > 0) {
       if (input$dt_filtre_commune != "all") {
-        df <- df |> filter(commune_nom == input$dt_filtre_commune)
+        df <- df |> filter(commune == input$dt_filtre_commune)
       }
       df <- df |> filter(heure >= input$dt_filtre_heure[1],
                          heure <= input$dt_filtre_heure[2])
@@ -199,11 +401,14 @@ server <- function(input, output, session) {
     datatable(donnees_filtrees(),
               options = list(pageLength = 10, scrollX = TRUE),
               rownames = FALSE,
-              filter = "top")
+              filter = "top",
+              class = "compact stripe")
   })
 
-  output$dt_n_lignes  <- renderText({ format(nrow(donnees_filtrees()), big.mark = " ") })
-  output$dt_vit_moy   <- renderText({
+  output$dt_n_lignes <- renderText({
+    format(nrow(donnees_filtrees()), big.mark = " ")
+  })
+  output$dt_vit_moy <- renderText({
     df <- donnees_filtrees()
     if (!"vitesse_kmh" %in% names(df) || nrow(df) == 0) return("—")
     paste0(round(mean(df$vitesse_kmh, na.rm = TRUE), 1), " km/h")
@@ -215,16 +420,15 @@ server <- function(input, output, session) {
   })
   output$dt_axe_pire <- renderText({
     df <- donnees_filtrees()
-    if (!"axe_id" %in% names(df) || nrow(df) == 0) return("—")
+    if (!"id_axe" %in% names(df) || nrow(df) == 0) return("—")
     df |>
-      group_by(axe_id) |>
+      group_by(id_axe) |>
       summarise(v = mean(vitesse_kmh, na.rm = TRUE), .groups = "drop") |>
       arrange(v) |>
       slice(1) |>
-      pull(axe_id)
+      pull(id_axe)
   })
 
-  # Export CSV
   output$dt_export <- downloadHandler(
     filename = function() {
       paste0("mobilite_abidjan_", input$dt_dataset, "_",
@@ -236,8 +440,28 @@ server <- function(input, output, session) {
   )
 
   output$source_note <- renderText({
-    paste0("Source : TomTom Traffic Flow API + GTFS DT4A + Wikipedia • ",
-           "Collecte : Mai 2025 • Licence : ODbL")
+    "Sources : TomTom Traffic Flow API · GTFS DT4A · Wikipedia · OSM · Mai 2025"
+  })
+
+  # ============================================================================
+  # ONGLET 8 — RECOMMANDATIONS (P1)
+  # ============================================================================
+
+  output$table_reco <- renderTable({
+    data.frame(
+      Priorité    = c("1", "2", "3", "4", "5"),
+      Recommandation = c(
+        "Voies bus dédiées Adjamé–Plateau",
+        "Décalage horaires entrée 7h–9h",
+        "Bus express Yopougon–Plateau",
+        "Réorganiser ronds-points Adjamé",
+        "Application temps réel pour usagers"
+      ),
+      Impact       = c("Très élevé", "Élevé", "Moyen", "Moyen", "Faible"),
+      Faisabilité  = c("Moyenne", "Élevée", "Moyenne", "Faible", "Élevée"),
+      Source       = c("Réseau + Trafic", "Trafic", "Trafic + ML",
+                       "Réseau", "Données + ML")
+    )
   })
 
 }
