@@ -97,8 +97,8 @@ ui <- dashboardPage(
           meta  = "Données du Grand Abidjan · Mai 2025 · GTFS · TomTom · OSM"
         ),
         section_subtitle(
-          "Abidjan perd en moyenne 2 h 20 par jour dans les transports.
-           Cet observatoire révèle où, quand et pourquoi la ville se bloque."
+          "Toutes les communes d'Abidjan ne sont pas égales face à la congestion. 
+          Cette plateforme mesure les disparités à partir de 2 040 mesures collectées sur 20 axes critiques."
         ),
 
         # KPIs (4 cards minimalistes)
@@ -110,8 +110,8 @@ ui <- dashboardPage(
           column(3, kpi_card("Axes bloqués",
                              textOutput("kpi_axes_bloques", inline = TRUE),
                              hint = "en heure de pointe", accent = COULEURS$rouge)),
-          column(3, kpi_card("Temps perdu", "2 h 20",
-                             hint = "vs 45 min en 2015", accent = COULEURS$vert))
+          column(3, kpi_card("Vitesse moy.", "33 km/h",
+                             hint = "sur 6 jours observés", accent = COULEURS$vert))
         ),
 
         # Présentation + état actuel
@@ -125,7 +125,7 @@ ui <- dashboardPage(
                      " (M1 Data Science et IA · UFHB) pour l'ONG ",
                      tags$strong("Abidjan Mobilité Durable"), "."),
               tags$p("Il croise trois sources de données — réseau GTFS des bus
-                     et woro-woro, vitesses TomTom sur 10 axes, et géométrie
+                     et woro-woro, vitesses TomTom sur 20 axes, et géométrie
                      OpenStreetMap — pour rendre visible une crise jusqu'ici
                      invisibilisée par l'absence de données ouvertes."),
               tags$div(class = "btn-row",
@@ -192,7 +192,7 @@ ui <- dashboardPage(
         tabName = "trafic",
         page_header(
           title = "Patterns de congestion",
-          meta  = "TomTom Traffic Flow · 10 axes · 5 jours · IC 95 % visualisés"
+          meta  = "TomTom Traffic Flow · 20 axes · 6 jours · IC 95 % visualisés"
         ),
         section_subtitle(
           "Abidjan suit un rythme prévisible : deux pics quotidiens à 8 h et 17 h.
