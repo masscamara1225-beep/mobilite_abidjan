@@ -39,3 +39,4 @@ rsconnect/
 .vscode/
 .idea/
 .positai
+*.backup
