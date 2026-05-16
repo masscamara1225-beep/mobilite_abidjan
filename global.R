@@ -22,6 +22,7 @@ library(shinyWidgets)        # pickerInput, awesomeRadio, etc.
 library(shinyjs)
 library(shinycssloaders)     # withSpinner
 library(waiter)              # écran chargement démarrage
+library(geojsonsf)
 
 # Manipulation données
 library(dplyr)

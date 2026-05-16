@@ -103,10 +103,84 @@ server <- function(input, output, session) {
   # ============================================================================
 
   output$carte_principale <- renderLeaflet({
-    leaflet() |>
-      addProviderTiles(providers$CartoDB.Positron) |>
+    
+    # 1. Calculer l'indice de congestion moyen par commune
+    cong_par_commune <- bind_rows(
+      flux_enrichi |> select(commune = commune_dep, indice_cong),
+      flux_enrichi |> select(commune = commune_arr, indice_cong) |> filter(!is.na(commune))
+    ) |>
+      group_by(commune) |>
+      summarise(indice_moyen = mean(indice_cong, na.rm = TRUE),
+                n_mesures    = n(),
+                .groups = "drop")
+    
+    # 2. Joindre aux polygones
+    geo_cong <- communes_geo |>
+      left_join(cong_par_commune, by = "commune")
+    
+    # 3. Palette de couleurs
+    pal <- colorNumeric(palette = c("#0F9D58", "#F4B400", "#DB4437"),
+                        domain  = c(0.3, 0.7),
+                        na.color = "#CCCCCC")
+    geo_cong$couleur <- pal(geo_cong$indice_moyen)
+    
+    # 4. Centroïdes pour les labels
+    centroides_sf <- sf::st_centroid(geo_cong)
+    coords <- sf::st_coordinates(centroides_sf)
+    centroides <- data.frame(
+      lng     = coords[, "X"],
+      lat     = coords[, "Y"],
+      commune = geo_cong$commune,
+      indice  = geo_cong$indice_moyen
+    )
+    centroides$label_text <- ifelse(
+      is.na(centroides$indice),
+      centroides$commune,
+      paste0(centroides$commune, " · ", round(centroides$indice, 2))
+    )
+    
+    # 5. Carte de base
+    m <- leaflet() |>
+      addProviderTiles(providers$CartoDB.Positron)
+    
+    # 6. Ajouter chaque commune comme un polygone séparé (avec sa couleur)
+    for (i in seq_len(nrow(geo_cong))) {
+      one_geo <- geojsonsf::sf_geojson(geo_cong[i, ])
+      m <- m |> addGeoJSON(
+        one_geo,
+        weight      = 2,
+        color       = "#0F2E1F",
+        fillColor   = geo_cong$couleur[i],
+        fillOpacity = 0.65
+      )
+    }
+    
+    # 7. Labels + légende + vue
+    m |>
+      addLabelOnlyMarkers(
+        data = centroides,
+        lng = ~lng, lat = ~lat,
+        label = ~label_text,
+        labelOptions = labelOptions(
+          noHide = TRUE,
+          direction = "center",
+          textOnly = TRUE,
+          style = list(
+            "color"       = "#0F2E1F",
+            "font-size"   = "12px",
+            "font-weight" = "600",
+            "text-shadow" = "1px 1px 2px white, -1px -1px 2px white"
+          )
+        )
+      ) |>
+      addLegend(
+        position = "bottomright",
+        pal      = pal,
+        values   = c(0.3, 0.7),
+        title    = "Indice congestion",
+        opacity  = 0.85
+      ) |>
       setView(lng = -4.01, lat = 5.36, zoom = 11)
-    # TODO — Brancher les polygones communes_geo (en cours de debug)
   })
 
   # Itinéraire (TODO J4 — osrm::osrmRoute)
