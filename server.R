@@ -27,6 +27,14 @@ server <- function(input, output, session) {
       updateSelectInput(session, "explo_commune",
                         choices = communes_dispo,
                         selected = communes_dispo[1])
+      # Itinéraire : on propose les 13 communes officielles (sans "duos")
+      communes_officielles <- sort(communes_geo$commune)
+      updateSelectizeInput(session, "itin_depart",
+                           choices  = communes_officielles,
+                           server   = FALSE)
+      updateSelectizeInput(session, "itin_arrivee",
+                           choices  = communes_officielles,
+                           server   = FALSE)
       updateSelectInput(session, "ml_depart",  choices = communes_dispo)
       updateSelectInput(session, "ml_arrivee", choices = communes_dispo,
                         selected = communes_dispo[2])
@@ -97,9 +105,8 @@ server <- function(input, output, session) {
   output$carte_principale <- renderLeaflet({
     leaflet() |>
       addProviderTiles(providers$CartoDB.Positron) |>
-      setView(lng = ABIDJAN_LON, lat = ABIDJAN_LAT, zoom = ABIDJAN_ZOOM)
-    # TODO J3 — réseau OSM (sf) coloré par indice_cong
-    # TODO J3 — addMarkerCluster pour les arrêts GTFS
+      setView(lng = -4.01, lat = 5.36, zoom = 11)
+    # TODO — Brancher les polygones communes_geo (en cours de debug)
   })
 
   # Itinéraire (TODO J4 — osrm::osrmRoute)

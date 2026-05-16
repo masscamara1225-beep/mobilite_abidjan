@@ -167,8 +167,24 @@ ui <- dashboardPage(
               choices = c("Toutes" = "all"), selected = "all"),
             tags$hr(),
             tags$h4("Itinéraire", class = "panel-h"),
-            textInput("itin_depart",  "Départ",  placeholder = "ex : Plateau"),
-            textInput("itin_arrivee", "Arrivée", placeholder = "ex : Yopougon"),
+            selectizeInput(
+              "itin_depart", "Départ",
+              choices  = NULL,
+              options  = list(
+                create      = TRUE,
+                placeholder = "ex : Plateau",
+                onInitialize = I('function() { this.setValue(""); }')
+              )
+            ),
+            selectizeInput(
+              "itin_arrivee", "Arrivée",
+              choices  = NULL,
+              options  = list(
+                create      = TRUE,
+                placeholder = "ex : Yopougon",
+                onInitialize = I('function() { this.setValue(""); }')
+              )
+            ),
             actionButton("btn_itin", "Calculer", class = "btn-pri btn-block"),
             uiOutput("resultat_itin")
           ),

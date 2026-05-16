@@ -101,15 +101,29 @@ flux_enrichi <- tryCatch(
   }
 
 
-communes_wiki <- tryCatch(
-  read_csv("data/processed/stats_communes_2021.csv", show_col_types = FALSE) |>
-    rename(commune = nom_commune,
-           population = population_2021),
-  error = function(e) {
-    message("⚠️  stats_communes_2021.csv pas encore livré — stub utilisé")
-    tibble(commune = character(), statut = character(), population = integer())
-  }
-)
+  communes_wiki <- tryCatch(
+    read_csv("data/processed/stats_communes_2021.csv", show_col_types = FALSE) |>
+      rename(commune = nom_commune,
+             population = population_2021),
+    error = function(e) {
+      message("⚠️  stats_communes_2021.csv pas encore livré — stub utilisé")
+      tibble(commune = character(), statut = character(), population = integer())
+    }
+  )
+  
+  # Polygones des 13 communes (geometry sf)
+  communes_geo <- tryCatch(
+    readRDS("data/raw/osm/communes_abidjan_13.rds") |>
+      mutate(
+        commune = name |>
+          stringi::stri_trans_general("Latin-ASCII")  # retire les accents
+      ) |>
+      select(commune, geometry),
+    error = function(e) {
+      message("⚠️  communes_abidjan_13.rds non trouvé — stub utilisé")
+      sf::st_sf(commune = character(), geometry = sf::st_sfc())
+    }
+  )
 graphe_communes <- tryCatch(
   readRDS("data/processed/graphe_communes.rds"),
   error = function(e) {
