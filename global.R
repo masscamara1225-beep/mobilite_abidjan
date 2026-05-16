@@ -81,12 +81,16 @@ ABIDJAN_ZOOM <- 11
 flux_enrichi <- tryCatch(
   read_csv("data/raw/tomtom/flux_cumul.csv", show_col_types = FALSE) |>
     mutate(date = as.Date(date),
-           timestamp = as.POSIXct(timestamp)),
+           timestamp = as.POSIXct(timestamp)) |>
+    separate(commune, into = c("commune_dep", "commune_arr"),
+             sep = "/", fill = "right", remove = FALSE))
   error = function(e) {
     message("⚠️  flux_cumul.csv pas encore livré — stub utilisé")
     tibble(
       id_axe = character(), nom_axe = character(),
-      commune = character(), destination = character(),
+      commune = character(),
+      commune_dep = character(), commune_arr = character(),
+      destination = character(),
       lat_dep = double(), lon_dep = double(),
       vitesse_kmh = double(), vitesse_libre_ref = double(),
       indice_cong = double(), niveau_cong = character(),
@@ -95,7 +99,7 @@ flux_enrichi <- tryCatch(
       jour = character(), timestamp = as.POSIXct(character())
     )
   }
-)
+
 
 communes_wiki <- tryCatch(
   read_csv("data/processed/stats_communes_2021.csv", show_col_types = FALSE) |>

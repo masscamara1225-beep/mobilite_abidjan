@@ -11,7 +11,10 @@ server <- function(input, output, session) {
   observe({
     if (nrow(flux_enrichi) > 0) {
       communes_dispo <- sort(unique(flux_enrichi$commune))
-      axes_dispo     <- sort(unique(flux_enrichi$id_axe))
+      axes_dispo <- flux_enrichi |>
+        distinct(id_axe, nom_axe) |>
+        arrange(id_axe) |>
+        (\(d) setNames(d$id_axe, d$nom_axe))()
 
       updateSelectInput(session, "filtre_commune",
                         choices = c("Toutes" = "all", communes_dispo))
@@ -194,11 +197,11 @@ server <- function(input, output, session) {
     df <- flux_enrichi |>
       filter(id_axe %in% input$comp_axes,
              heure == input$comp_heure) |>
-      group_by(id_axe) |>
+      group_by(id_axe, nom_axe) |>
       summarise(v = mean(vitesse_kmh, na.rm = TRUE), .groups = "drop") |>
       arrange(v)
 
-    plot_ly(df, x = ~v, y = ~reorder(id_axe, v),
+    plot_ly(df, x = ~v, y = ~reorder(nom_axe, v),
             type = "bar", orientation = "h",
             marker = list(color = COULEURS$orange)) |>
       layout(
