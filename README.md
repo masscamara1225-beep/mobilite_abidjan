@@ -3,9 +3,9 @@
 > Application Shiny d'analyse des flux de transport urbain à Abidjan.
 > *Comprendre les embouteillages d'Abidjan par les données.*
 
-**Équipe** : Master MAS · INPHB Abidjan
+**Équipe** : Master MAS · UFHB Abidjan
 **Encadrant** : Dr. Laurent Rouvière — Université Rennes 2
-**Client** : ONG Abidjan Mobilité Durable
+**Portee**: Mobilite urbaine a Abidjan et outil d'aide a decision des decideurs
 **Deadline** : 27 mai 2025
 
 ---
