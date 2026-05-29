@@ -40,7 +40,7 @@ library(visNetwork)
 
 # Spatial / Routing
 library(sf)
-# library(osrm)   # à activer J4 pour itinéraires
+library(osrm)  
 
 # Réseau
 library(igraph)
@@ -79,11 +79,11 @@ ABIDJAN_ZOOM <- 11
 # 3. CHARGEMENT DES DONNÉES (avec garde-fous tant que P1 n'a pas livré)
 # ------------------------------------------------------------------------------
 flux_enrichi <- tryCatch(
-  read_csv("data/raw/tomtom/flux_cumul.csv", show_col_types = FALSE) |>
+  read_csv("data/processed/flux_enrichi.csv", show_col_types = FALSE) |>
     mutate(date = as.Date(date),
            timestamp = as.POSIXct(timestamp)),
   error = function(e) {
-    message("⚠️  flux_cumul.csv pas encore livré — stub utilisé")
+    message("⚠️  flux_enrichi.csv pas encore disponible — stub utilisé")
     tibble(
       id_axe = character(), nom_axe = character(),
       commune = character(), destination = character(),
@@ -98,9 +98,7 @@ flux_enrichi <- tryCatch(
 )
 
 communes_wiki <- tryCatch(
-  read_csv("data/processed/stats_communes_2021.csv", show_col_types = FALSE) |>
-    rename(commune = nom_commune,
-           population = population_2021),
+  read_csv("data/processed/stats_communes_2021.csv", show_col_types = FALSE),
   error = function(e) {
     message("⚠️  stats_communes_2021.csv pas encore livré — stub utilisé")
     tibble(commune = character(), statut = character(), population = integer())
@@ -117,9 +115,14 @@ graphe_communes <- tryCatch(
 mod_rf <- tryCatch(
   readRDS("models/mod_rf_vitesse.rds"),
   error = function(e) {
-    message("⚠️  mod_rf_vitesse.rds pas encore livré")
+    message(" mod_rf_vitesse.rds pas encore livré")
     NULL
   }
+)
+
+gtfs <- tryCatch(
+  readRDS("data/raw/gtfs/reseau_gtfs.rds"),
+  error = function(e) { message("reseau_gtfs.rds non trouvé"); NULL }
 )
 
 # ------------------------------------------------------------------------------
