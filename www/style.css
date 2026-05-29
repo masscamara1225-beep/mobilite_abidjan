@@ -677,6 +677,103 @@ table.dataTable tbody tr:hover {
   background: linear-gradient(90deg, var(--orange) 0%, var(--orange-light) 100%) !important;
 }
 
+/* ============================================================================
+   NOTRE CONSTAT (Accueil — boîtes Adjamé / Yopougon)
+   ============================================================================ */
+.constat-intro {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+  margin: 4px 0 18px 0;
+  font-style: italic;
+}
+.constat-box {
+  padding: 18px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  margin-bottom: 10px;
+  min-height: 180px;
+}
+.constat-box h4 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.constat-box p {
+  margin: 6px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.constat-box-orange {
+  border-left: 4px solid var(--orange);
+  background: var(--orange-pale);
+}
+.constat-box-orange h4 { color: var(--orange); }
+
+.constat-box-red {
+  border-left: 4px solid var(--rouge);
+  background: var(--rouge-soft);
+}
+.constat-box-red h4 { color: var(--rouge); }
+
+.constat-conclusion {
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: var(--orange-pale);
+  border-left: 3px solid var(--orange);
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+/* ============================================================================
+   PARCOURS GUIDÉ (Accueil — cards cliquables vers onglets)
+   ============================================================================ */
+.section-title {
+  margin: 30px 0 4px 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+.section-subtitle {
+  margin: 0 0 18px 0;
+  font-size: 14px;
+  color: var(--text-muted, #6B7280);
+}
+.parcours-card {
+  display: block;
+  padding: 18px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  margin-bottom: 14px;
+  text-decoration: none !important;
+  color: var(--text) !important;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  min-height: 110px;
+}
+.parcours-card:hover {
+  border-color: var(--orange);
+  box-shadow: 0 4px 12px rgba(232, 114, 28, 0.12);
+  transform: translateY(-2px);
+  text-decoration: none !important;
+}
+.parcours-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.parcours-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted, #6B7280);
+}
+
 /* responsive */
 @media (max-width: 768px) {
   .ph-title { font-size: 20px; }

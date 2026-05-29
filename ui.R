@@ -81,7 +81,8 @@ ui <- dashboardPage(
       color = "#0A0A0A"
     ),
     tags$head(
-      tags$link(rel = "stylesheet", type = "text/css", href = "style.css"),
+      tags$link(rel = "stylesheet", type = "text/css",
+                href = paste0("style.css?v=", as.numeric(Sys.time()))),
       tags$meta(charset = "UTF-8")
     ),
 
@@ -94,57 +95,130 @@ ui <- dashboardPage(
       tabItem(
         tabName = "accueil",
         page_header(
-          title = "Vue d'ensemble",
-          meta  = "Données du Grand Abidjan · Mai 2026 · GTFS · TomTom · OSM"
+          title = "Toutes les communes ne sont pas égales face aux bouchons",
+          meta  = "Grand Abidjan · 13 communes · Mai 2026 · GTFS · TomTom · OSM"
         ),
         section_subtitle(
-          "Toutes les communes d'Abidjan ne sont pas égales face à la congestion. 
-          Cette plateforme mesure les disparités à partir de 2 040 mesures collectées sur 20 axes critiques."
+          "Abidjan, capitale économique de la Côte d'Ivoire, compte 6,2 millions
+           d'habitants. Sa croissance rapide a généré une congestion routière
+           qui touche inégalement les communes. Cette étude mesure ces disparités
+           à partir de 4 430 mesures collectées sur 20 axes critiques."
         ),
-
+        
         # KPIs (4 cards minimalistes)
         fluidRow(
           column(3, kpi_card("Communes",   "13",
                              hint = "Grand Abidjan", accent = COULEURS$orange)),
-          column(3, kpi_card("Arrêts",     "847",
-                             hint = "SOTRA · Gbaka · Woro", accent = COULEURS$bleu)),
+          column(3, kpi_card("Mesures",    "4 430",
+                             hint = "16 jours d'observation", accent = COULEURS$bleu)),
           column(3, kpi_card("Axes bloqués",
                              textOutput("kpi_axes_bloques", inline = TRUE),
                              hint = "en heure de pointe", accent = COULEURS$rouge)),
-          column(3, kpi_card("Vitesse moy.", "33 km/h",
-                             hint = "sur 6 jours observés", accent = COULEURS$vert))
+          column(3, kpi_card("Vitesse min.", "11 km/h",
+                             hint = "à 8h et 17h", accent = COULEURS$vert))
         ),
-
-        # Présentation + état actuel
+        
+        # Notre constat (problématique)
         fluidRow(
-          column(7,
-            card(
-              title = "À propos du projet",
-              tags$p("Cette étude a été développée par ",
-                     tags$strong("CAMARA Massaram"), ", ",
-                     tags$strong("LOGBO Axelle"), " et ",
-                     tags$strong("KOUADIO Ryu Emmanuel Marie"),
-                     " (M1 Data Science&IA · UFHBMI) ",
-                     tags$strong("Abidjan Mobilité "), "."),
-              tags$p("Il croise trois sources de données — réseau GTFS des bus
-                     et woro-woro, vitesses TomTom sur 20 axes, et géométrie
-                     OpenStreetMap — pour rendre visible une crise jusqu'ici
-                     invisibilisée par l'absence de données ouvertes."),
-              tags$div(class = "btn-row",
-                actionButton("go_carte",  "Voir la carte",     class = "btn-pri"),
-                actionButton("go_rapport","Lire le rapport",   class = "btn-sec")
-              )
-            )
+          column(12,
+                 card(
+                   title = "Notre constat",
+                   tags$p(class = "constat-intro",
+                          "La commune où ça bouchonne le plus n'est pas celle où le plus
+                 de personnes en souffrent."),
+                   fluidRow(
+                     column(6,
+                            tags$div(class = "constat-box constat-box-orange",
+                                     tags$h4("Adjamé"),
+                                     tags$p(tags$b("0.60"), " d'indice de congestion"),
+                                     tags$p(class = "muted-small", "341 000 habitants"),
+                                     tags$p("→ Forte congestion, population modérée")
+                            )
+                     ),
+                     column(6,
+                            tags$div(class = "constat-box constat-box-red",
+                                     tags$h4("Yopougon"),
+                                     tags$p(tags$b("0.52"), " d'indice de congestion"),
+                                     tags$p(class = "muted-small", "1 571 065 habitants"),
+                                     tags$p("→ Congestion modérée, mais ", tags$b("1,5 million"),
+                                            " de personnes impactées chaque jour")
+                            )
+                     )
+                   ),
+                   tags$p(class = "constat-conclusion",
+                          "Cette étude identifie ces disparités à l'aide d'outils
+                 statistiques et propose une priorisation des axes à traiter.")
+                 )
+          )
+        ),
+        
+        # Parcours guidé
+        fluidRow(
+          column(12,
+                 tags$h3(class = "section-title", "Parcours guidé"),
+                 tags$p(class = "section-subtitle",
+                        "Suivez le fil de notre analyse, onglet par onglet.")
+          )
+        ),
+        fluidRow(
+          column(4,
+                 actionLink("nav_carte", class = "parcours-card",
+                            tags$div(
+                              tags$h4("🗺️  Carte"),
+                              tags$p("Voir géographiquement où se concentrent les bouchons
+                        et l'impact humain.")
+                            )
+                 )
           ),
-          column(5,
-            card(
-              title = "Niveau actuel par commune",
-              uiOutput("etat_temps_reel")
-            )
+          column(4,
+                 actionLink("nav_trafic", class = "parcours-card",
+                            tags$div(
+                              tags$h4("📈  Trafic"),
+                              tags$p("Comprendre les rythmes horaires : deux pics quotidiens
+                        à 8h et 17h.")
+                            )
+                 )
+          ),
+          column(4,
+                 actionLink("nav_exploration", class = "parcours-card",
+                            tags$div(
+                              tags$h4("🔍  Comparer"),
+                              tags$p("Tester statistiquement si l'écart entre deux communes
+                        est réel.")
+                            )
+                 )
+          )
+        ),
+        fluidRow(
+          column(4,
+                 actionLink("nav_reseau", class = "parcours-card",
+                            tags$div(
+                              tags$h4("🔗  Réseau"),
+                              tags$p("Identifier les communes pivots qui paralysent tout
+                        Abidjan si saturées.")
+                            )
+                 )
+          ),
+          column(4,
+                 actionLink("nav_ml", class = "parcours-card",
+                            tags$div(
+                              tags$h4("🤖  Prédiction"),
+                              tags$p("Anticiper le temps de trajet selon l'heure, le jour
+                        et la commune.")
+                            )
+                 )
+          ),
+          column(4,
+                 actionLink("nav_reco", class = "parcours-card",
+                            tags$div(
+                              tags$h4("💡  Recommandations"),
+                              tags$p("Synthèse des actions à prioriser pour réduire les
+                        disparités.")
+                            )
+                 )
           )
         )
       ),
-
       # ====================================================================
       # ONGLET 2 — CARTE (P2) — sidebarLayout
       # ====================================================================

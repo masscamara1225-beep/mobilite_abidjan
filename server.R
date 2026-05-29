@@ -56,7 +56,7 @@ server <- function(input, output, session) {
   # ONGLET 1 — ACCUEIL
   # ============================================================================
 
-  # Boutons navigation
+  # Boutons navigation — anciens + nouveaux Parcours guidé
   observeEvent(input$go_carte, {
     updateTabItems(session, "main_tabs", "carte")
   })
@@ -64,12 +64,32 @@ server <- function(input, output, session) {
     showNotification("Rapport Quarto à générer (rapport.qmd)",
                      type = "message")
   })
+  
+  # Cards cliquables du Parcours guidé (Accueil)
+  observeEvent(input$nav_carte, {
+    updateTabItems(session, "main_tabs", "carte")
+  })
+  observeEvent(input$nav_trafic, {
+    updateTabItems(session, "main_tabs", "trafic")
+  })
+  observeEvent(input$nav_exploration, {
+    updateTabItems(session, "main_tabs", "exploration")
+  })
+  observeEvent(input$nav_reseau, {
+    updateTabItems(session, "main_tabs", "reseau")
+  })
+  observeEvent(input$nav_ml, {
+    updateTabItems(session, "main_tabs", "ml_pred")
+  })
+  observeEvent(input$nav_reco, {
+    updateTabItems(session, "main_tabs", "recommandations")
+  })
 
   # KPI dynamique : axes bloqués actuellement
   output$kpi_axes_bloques <- renderText({
     if (nrow(flux_enrichi) == 0) return("—")
     n_bloques <- flux_enrichi |>
-      filter(niveau_cong == "Bloqué") |>
+      filter(niveau_cong == "Bloque") |>
       pull(id_axe) |>
       n_distinct()
     as.character(n_bloques)
