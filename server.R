@@ -104,25 +104,28 @@ server <- function(input, output, session) {
 
   output$carte_principale <- renderLeaflet({
     
-    # 1. Calculer l'indice de congestion moyen par commune
-    cong_par_commune <- bind_rows(
-      flux_enrichi |> select(commune = commune_dep, indice_cong),
-      flux_enrichi |> select(commune = commune_arr, indice_cong) |> filter(!is.na(commune))
-    ) |>
-      group_by(commune) |>
-      summarise(indice_moyen = mean(indice_cong, na.rm = TRUE),
-                n_mesures    = n(),
-                .groups = "drop")
+    # 1. Choisir l'indicateur selon le radioButton
+    if (input$carte_indice == "disparite") {
+      df_carte <- indice_disparite |>
+        select(commune, valeur = indice_disparite, n_mesures, population)
+      titre_legende <- "Impact humain"
+      domaine_pal   <- c(0, max(df_carte$valeur, na.rm = TRUE))
+    } else {
+      df_carte <- indice_disparite |>
+        select(commune, valeur = indice_cong_moyen, n_mesures, population)
+      titre_legende <- "Niveau bouchons"
+      domaine_pal   <- c(0.3, 0.7)
+    }
     
     # 2. Joindre aux polygones
     geo_cong <- communes_geo |>
-      left_join(cong_par_commune, by = "commune")
+      left_join(df_carte, by = "commune")
     
     # 3. Palette de couleurs
     pal <- colorNumeric(palette = c("#0F9D58", "#F4B400", "#DB4437"),
-                        domain  = c(0.3, 0.7),
+                        domain  = domaine_pal,
                         na.color = "#CCCCCC")
-    geo_cong$couleur <- pal(geo_cong$indice_moyen)
+    geo_cong$couleur <- pal(geo_cong$valeur)
     
     # 4. Centroïdes pour les labels
     centroides_sf <- sf::st_centroid(geo_cong)
@@ -131,19 +134,19 @@ server <- function(input, output, session) {
       lng     = coords[, "X"],
       lat     = coords[, "Y"],
       commune = geo_cong$commune,
-      indice  = geo_cong$indice_moyen
+      valeur  = geo_cong$valeur
     )
     centroides$label_text <- ifelse(
-      is.na(centroides$indice),
+      is.na(centroides$valeur),
       centroides$commune,
-      paste0(centroides$commune, " · ", round(centroides$indice, 2))
+      paste0(centroides$commune, " · ", round(centroides$valeur, 2))
     )
     
     # 5. Carte de base
     m <- leaflet() |>
       addProviderTiles(providers$CartoDB.Positron)
     
-    # 6. Ajouter chaque commune comme un polygone séparé (avec sa couleur)
+    # 6. Ajouter chaque commune comme polygone séparé
     for (i in seq_len(nrow(geo_cong))) {
       one_geo <- geojsonsf::sf_geojson(geo_cong[i, ])
       m <- m |> addGeoJSON(
@@ -176,13 +179,45 @@ server <- function(input, output, session) {
       addLegend(
         position = "bottomright",
         pal      = pal,
-        values   = c(0.3, 0.7),
-        title    = "Indice congestion",
+        values   = domaine_pal,
+        title    = titre_legende,
         opacity  = 0.85
       ) |>
       setView(lng = -4.01, lat = 5.36, zoom = 11)
   })
-
+  # Bande "Lecture" dynamique selon le mode de la carte
+  output$carte_lecture <- renderUI({
+    
+    if (input$carte_indice == "disparite") {
+      
+      top <- indice_disparite |>
+        arrange(desc(indice_disparite)) |>
+        slice(1:2)
+      
+      note_box(HTML(paste0(
+        "<b>Lecture · Impact humain</b><br/>",
+        "On pondère ici les bouchons par la population de chaque commune. ",
+        "<b>", top$commune[1], "</b> et <b>", top$commune[2], "</b> ressortent ",
+        "comme les plus touchées : pas forcément celles qui bouchonnent le plus, ",
+        "mais celles où le plus de personnes en subissent les conséquences."
+      )))
+      
+    } else {
+      
+      top <- indice_disparite |>
+        arrange(desc(indice_cong_moyen)) |>
+        slice(1:2)
+      
+      note_box(HTML(paste0(
+        "<b>Lecture · Niveau de bouchons</b><br/>",
+        "Plus la couleur tire vers le rouge, plus la commune subit ",
+        "d'embouteillages en moyenne. <b>", top$commune[1], "</b> (",
+        round(top$indice_cong_moyen[1], 2), ") et <b>", top$commune[2], "</b> (",
+        round(top$indice_cong_moyen[2], 2), ") sont techniquement les plus bouchées."
+      )))
+    }
+  })
+  
   # Itinéraire (TODO J4 — osrm::osrmRoute)
   observeEvent(input$btn_itin, {
     req(nzchar(input$itin_depart), nzchar(input$itin_arrivee))

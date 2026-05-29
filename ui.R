@@ -90,6 +90,7 @@ ui <- dashboardPage(
       # ====================================================================
       # ONGLET 1 — ACCUEIL (P2)
       # ====================================================================
+      
       tabItem(
         tabName = "accueil",
         page_header(
@@ -148,14 +149,17 @@ ui <- dashboardPage(
       # ====================================================================
       tabItem(
         tabName = "carte",
+        
         page_header(
-          title = "Carte du réseau",
-          meta  = "Couleur des routes = niveau de congestion · Cliquez sur un arrêt pour le détail"
+          title = "Carte des  disparités ",
+          meta  = "13 communes du Grand Abidjan"
         ),
         section_subtitle(
-          "Les chiffres deviennent géographie. Voyez physiquement où se forment
-           les bouchons et calculez votre itinéraire optimal."
+          "Toutes les communes ne subissent pas les bouchons de la même manière.
+           Choisissez à droite ce que vous voulez voir : où ça bouchonne le plus,
+           ou bien où les bouchons touchent le plus de monde."
         ),
+        
         sidebarLayout(
           sidebarPanel(
             width = 3,
@@ -163,8 +167,10 @@ ui <- dashboardPage(
             checkboxGroupInput("filtre_transport", "Transport",
               choices  = c("Bus SOTRA", "Gbaka", "Woro-woro"),
               selected = c("Bus SOTRA", "Gbaka", "Woro-woro")),
-            selectInput("filtre_commune", "Commune",
-              choices = c("Toutes" = "all"), selected = "all"),
+            radioButtons("carte_indice", "Indicateur affiché",
+                choices  = c("Où ça Bouchonne le plus" = "congestion",
+                                      "Où ça impact le plus de Personne " = "disparite"),
+                selected = "congestion"),
             tags$hr(),
             tags$h4("Itinéraire", class = "panel-h"),
             selectizeInput(
@@ -194,9 +200,7 @@ ui <- dashboardPage(
               leafletOutput("carte_principale", height = 600),
               color = COULEURS$orange, type = 6
             ),
-            note_box("Le Pont HKB et l'axe Adjamé–Plateau concentrent l'essentiel
-                      de la congestion. Contourner ces deux points peut faire
-                      gagner 23 min en heure de pointe.")
+            uiOutput("carte_lecture")
           )
         )
       ),

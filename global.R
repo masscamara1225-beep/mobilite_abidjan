@@ -105,7 +105,10 @@ flux_enrichi <- tryCatch(
   communes_wiki <- tryCatch(
     read_csv("data/processed/stats_communes_2021.csv", show_col_types = FALSE) |>
       rename(commune = nom_commune,
-             population = population_2021),
+             population = population_2021) |>
+      mutate(commune = commune |>
+               stringi::stri_trans_general("Latin-ASCII") |>
+               stringr::str_remove("^Le ")),
     error = function(e) {
       message("⚠️  stats_communes_2021.csv pas encore livré — stub utilisé")
       tibble(commune = character(), statut = character(), population = integer())
@@ -125,6 +128,41 @@ flux_enrichi <- tryCatch(
       sf::st_sf(commune = character(), geometry = sf::st_sfc())
     }
   )
+  
+  # ============================================================================
+  # Indice de disparité par commune (cœur de la problématique)
+  # Formule : indice_disparite(c) = indice_cong_moyen(c) × pop(c) / max(pop)
+  # Lecture : impact humain réel de la congestion (pondéré par population)
+  # ============================================================================
+  indice_disparite <- tryCatch({
+    
+    # Indice de congestion moyen par commune (sur commune_dep + commune_arr)
+    cong_par_commune <- bind_rows(
+      flux_enrichi |> select(commune = commune_dep, indice_cong),
+      flux_enrichi |> select(commune = commune_arr, indice_cong) |> filter(!is.na(commune))
+    ) |>
+      group_by(commune) |>
+      summarise(indice_cong_moyen = mean(indice_cong, na.rm = TRUE),
+                n_mesures         = n(),
+                .groups = "drop")
+    
+    # Jointure avec la population et calcul de l'indice de disparité
+    cong_par_commune |>
+      left_join(communes_wiki |> select(commune, population), by = "commune") |>
+      mutate(
+        pop_max          = max(population, na.rm = TRUE),
+        indice_disparite = indice_cong_moyen * population / pop_max
+      ) |>
+      arrange(desc(indice_disparite))
+    
+  }, error = function(e) {
+    message("⚠️  Calcul indice_disparite impossible — données manquantes")
+    tibble(commune = character(), indice_cong_moyen = double(),
+           n_mesures = integer(), population = integer(),
+           pop_max = integer(), indice_disparite = double())
+  })
+  
+  
 graphe_communes <- tryCatch(
   readRDS("data/processed/graphe_communes.rds"),
   error = function(e) {
