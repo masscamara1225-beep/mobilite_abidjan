@@ -42,7 +42,7 @@ library(visNetwork)
 
 # Spatial / Routing
 library(sf)
-# library(osrm)   # à activer J4 pour itinéraires
+library(osrm)   # itinéraires entre communes
 
 # Réseau
 library(igraph)
@@ -81,13 +81,29 @@ ABIDJAN_ZOOM <- 11
 # 3. CHARGEMENT DES DONNÉES (avec garde-fous tant que P1 n'a pas livré)
 # ------------------------------------------------------------------------------
 flux_enrichi <- tryCatch(
-  read_csv("data/raw/tomtom/flux_cumul.csv", show_col_types = FALSE) |>
+  read_csv("data/processed/flux_enrichi.csv", show_col_types = FALSE) |>
     mutate(date = as.Date(date),
            timestamp = as.POSIXct(timestamp)) |>
-    separate(commune, into = c("commune_dep", "commune_arr"),
-             sep = "/", fill = "right", remove = FALSE))
+    # Si commune_dep n'existe pas (ancien format), on le crée depuis commune
+    (\(df) {
+      if (!"commune_dep" %in% names(df)) {
+        df |> separate(commune,
+                       into = c("commune_dep", "commune_arr"),
+                       sep = "/", fill = "right", remove = FALSE)
+      } else {
+        # Nouveau format : commune_dep existe déjà, on crée commune_arr depuis commune si besoin
+        if (!"commune_arr" %in% names(df)) {
+          df |> separate(commune,
+                         into = c("tmp_dep", "commune_arr"),
+                         sep = "/", fill = "right", remove = FALSE) |>
+            select(-tmp_dep)
+        } else {
+          df
+        }
+      }
+    })(),
   error = function(e) {
-    message("⚠️  flux_cumul.csv pas encore livré — stub utilisé")
+    message("⚠️  flux_enrichi.csv pas encore livré — stub utilisé")
     tibble(
       id_axe = character(), nom_axe = character(),
       commune = character(),
@@ -101,6 +117,7 @@ flux_enrichi <- tryCatch(
       jour = character(), timestamp = as.POSIXct(character())
     )
   }
+)
 
 
   communes_wiki <- tryCatch(

@@ -25,7 +25,7 @@ ui <- dashboardPage(
       tags$span(class = "brand-dot"),
       tags$span(class = "brand-text",
                 tags$span(class = "brand-main", "Mobilité Abidjan"),
-                tags$span(class = "brand-sub", "Observatoire des données"))
+                tags$span(class = "brand-sub", "Analyse de la mobilité urbaine"))
     ),
     titleWidth = 280
   ),
@@ -95,7 +95,7 @@ ui <- dashboardPage(
         tabName = "accueil",
         page_header(
           title = "Vue d'ensemble",
-          meta  = "Données du Grand Abidjan · Mai 2025 · GTFS · TomTom · OSM"
+          meta  = "Données du Grand Abidjan · Mai 2026 · GTFS · TomTom · OSM"
         ),
         section_subtitle(
           "Toutes les communes d'Abidjan ne sont pas égales face à la congestion. 
@@ -120,7 +120,7 @@ ui <- dashboardPage(
           column(7,
             card(
               title = "À propos du projet",
-              tags$p("Cet observatoire a été développé par ",
+              tags$p("Cette étude a été développée par ",
                      tags$strong("CAMARA Massaram"), ", ",
                      tags$strong("LOGBO Axelle"), " et ",
                      tags$strong("KOUADIO Ryu Emmanuel Marie"),
@@ -306,12 +306,13 @@ ui <- dashboardPage(
       tabItem(
         tabName = "exploration",
         page_header(
-          title = "Exploration statistique",
-          meta  = "Analyse exploratoire · IC 95 % par commune · Données flux_enrichi.csv"
+          title = "Comparer les communes",
+          meta  = "Distributions · IC 95 % · Test statistique de Wilcoxon"
         ),
         section_subtitle(
-          "Au-delà des moyennes, les distributions et intervalles de confiance
-           révèlent la fiabilité réelle des temps de trajet."
+          "Au-delà des moyennes, les distributions et les tests statistiques
+           révèlent si l'écart entre deux communes est réel ou peut être
+           dû au hasard."
         ),
 
         # Filtres groupés dans un wellPanel (cours chap.10)
@@ -388,12 +389,13 @@ ui <- dashboardPage(
       tabItem(
         tabName = "reseau",
         page_header(
-          title = "Réseau inter-communes",
-          meta  = "igraph · betweenness · closeness · Louvain"
+          title = "Patterns de congestion",
+          meta  = "TomTom Traffic Flow · 20 axes · 16 jours · IC 95 % visualisés"
         ),
         section_subtitle(
-          "Quelle commune paralyse tout Abidjan si elle est saturée ?
-           La théorie des graphes révèle les nœuds critiques."
+          "Abidjan suit un rythme prévisible : deux pics quotidiens à 8 h et 17 h
+           où la vitesse moyenne chute à 11 km/h. La zone colorée autour des
+           courbes représente l'intervalle de confiance à 95 %."
         ),
         sidebarLayout(
           sidebarPanel(

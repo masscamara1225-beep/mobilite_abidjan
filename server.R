@@ -227,23 +227,96 @@ server <- function(input, output, session) {
     }
   })
   
-  # Itinéraire (TODO J4 — osrm::osrmRoute)
+  # Itinéraire — calcul OSRM réel (API publique OpenStreetMap)
   observeEvent(input$btn_itin, {
     req(nzchar(input$itin_depart), nzchar(input$itin_arrivee))
     
     loader_carte$show()
-    Sys.sleep(1.2)   # simule le temps d'appel osrm — à enlever quand connecté
+    
+    # Récupérer les centroïdes des 2 communes
+    coords_dep <- communes_geo |> filter(commune == input$itin_depart)
+    coords_arr <- communes_geo |> filter(commune == input$itin_arrivee)
+    
+    if (nrow(coords_dep) == 0 || nrow(coords_arr) == 0) {
+      loader_carte$hide()
+      output$resultat_itin <- renderUI({
+        tags$div(class = "itin-result",
+                 tags$p(class = "muted-small",
+                        "Commune introuvable. Sélectionnez une commune dans la liste."))
+      })
+      return()
+    }
+    
+    centro_dep <- sf::st_centroid(coords_dep) |> sf::st_coordinates()
+    centro_arr <- sf::st_centroid(coords_arr) |> sf::st_coordinates()
+    
+    # Appel OSRM
+    route <- tryCatch({
+      osrm::osrmRoute(
+        src = c(centro_dep[1, "X"], centro_dep[1, "Y"]),
+        dst = c(centro_arr[1, "X"], centro_arr[1, "Y"]),
+        overview = "full",
+        osrm.server = "https://routing.openstreetmap.de/routed-car/",
+        osrm.profile = "car"
+      )
+    }, error = function(e) NULL)
+    
     loader_carte$hide()
+    
+    if (is.null(route)) {
+      output$resultat_itin <- renderUI({
+        tags$div(class = "itin-result",
+                 tags$p(tags$strong(input$itin_depart), " → ",
+                        tags$strong(input$itin_arrivee)),
+                 tags$p(class = "muted-small",
+                        "Calcul impossible (serveur OSRM indisponible). Réessayez."))
+      })
+      return()
+    }
+    
+    # Tracer le trajet sur la carte avec leafletProxy
+    leafletProxy("carte_principale") |>
+      clearGroup("itineraire") |>
+      addPolylines(
+        data = route,
+        color = "#0F2E1F",
+        weight = 5,
+        opacity = 0.9,
+        group = "itineraire"
+      ) |>
+      addCircleMarkers(
+        lng = centro_dep[1, "X"], lat = centro_dep[1, "Y"],
+        radius = 8, color = "#E8721C", fillColor = "#E8721C",
+        fillOpacity = 1, weight = 2,
+        label = paste("Départ :", input$itin_depart),
+        group = "itineraire"
+      ) |>
+      addCircleMarkers(
+        lng = centro_arr[1, "X"], lat = centro_arr[1, "Y"],
+        radius = 8, color = "#0F9D58", fillColor = "#0F9D58",
+        fillOpacity = 1, weight = 2,
+        label = paste("Arrivée :", input$itin_arrivee),
+        group = "itineraire"
+      )
+    
+    # Distance et durée
+    dist_km <- round(route$distance, 1)
+    duree_min <- round(route$duration)
     
     output$resultat_itin <- renderUI({
       tags$div(class = "itin-result",
                tags$p(tags$strong(input$itin_depart), " → ",
                       tags$strong(input$itin_arrivee)),
-               tags$p(class = "muted-small", "Calcul osrm — à connecter J4")
+               tags$p(class = "itin-stats",
+                      tags$span(tags$b(dist_km), " km"),
+                      " · ",
+                      tags$span(tags$b(duree_min), " min en circulation fluide")
+               ),
+               tags$p(class = "muted-small",
+                      "Calcul OSRM via OpenStreetMap · trajet voiture optimal")
       )
     })
   })
-
   # ============================================================================
   # ONGLET 3 — TRAFIC + IC 95%
   # ============================================================================
