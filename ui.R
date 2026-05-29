@@ -356,10 +356,29 @@ ui <- dashboardPage(
             )
           )
         ),
-
-        note_box("Adjamé et Abobo affichent un IC large (forte variabilité),
-                  signe que leurs temps de trajet sont peu prévisibles.
-                  Yopougon et Port-Bouët ont un IC étroit : circulation stable.")
+        # Test statistique comparatif entre 2 communes
+        fluidRow(
+          column(12,
+                 card(
+                   title = "Test statistique · comparer deux communes",
+                   tags$p(class = "card-desc",
+                          "Sélectionnez deux communes. Le test de Wilcoxon-Mann-Whitney indique
+                 si l'écart de vitesses entre les deux est statistiquement significatif
+                 ou s'il peut être dû au hasard."),
+                   fluidRow(
+                     column(6, selectInput("test_commune_a", "Commune A",
+                                           choices = NULL, multiple = FALSE)),
+                     column(6, selectInput("test_commune_b", "Commune B",
+                                           choices = NULL, multiple = FALSE))
+                   ),
+                   uiOutput("test_resultat")
+                 )
+          )
+        ),
+        note_box("Le test de Wilcoxon compare la distribution complète des vitesses,
+                  pas seulement leurs moyennes. Une p-value < 0.05 signifie que
+                  l'écart observé entre les deux communes est trop fort pour être
+                  dû au hasard.")
       ),
 
       # ====================================================================

@@ -27,6 +27,15 @@ server <- function(input, output, session) {
       updateSelectInput(session, "explo_commune",
                         choices = communes_dispo,
                         selected = communes_dispo[1])
+      
+      # Test statistique : 2 sélecteurs (par défaut, 2 communes différentes)
+      updateSelectInput(session, "test_commune_a",
+                        choices  = communes_dispo,
+                        selected = communes_dispo[1])
+      updateSelectInput(session, "test_commune_b",
+                        choices  = communes_dispo,
+                        selected = communes_dispo[length(communes_dispo)])
+      
       # Itinéraire : on propose les 13 communes officielles (sans "duos")
       communes_officielles <- sort(communes_geo$commune)
       updateSelectizeInput(session, "itin_depart",
@@ -406,6 +415,92 @@ server <- function(input, output, session) {
     datatable(stats,
               options = list(pageLength = 13, dom = 't', searching = FALSE),
               rownames = FALSE)
+  })
+  
+  # --- Test statistique de Wilcoxon entre 2 communes ---
+  output$test_resultat <- renderUI({
+    
+    req(input$test_commune_a, input$test_commune_b)
+    
+    a <- input$test_commune_a
+    b <- input$test_commune_b
+    
+    if (a == b) {
+      return(tags$div(class = "test-result test-neutral",
+                      tags$p("Sélectionnez deux communes ", tags$b("différentes"),
+                             " pour effectuer la comparaison.")
+      ))
+    }
+    
+    # Récupérer les vitesses des 2 communes
+    v_a <- flux_enrichi |>
+      filter(commune == a) |>
+      pull(vitesse_kmh)
+    
+    v_b <- flux_enrichi |>
+      filter(commune == b) |>
+      pull(vitesse_kmh)
+    
+    if (length(v_a) < 3 || length(v_b) < 3) {
+      return(tags$div(class = "test-result test-neutral",
+                      tags$p("Pas assez de données pour comparer ces deux communes.")
+      ))
+    }
+    
+    # Test de Wilcoxon-Mann-Whitney
+    res <- tryCatch(
+      wilcox.test(v_a, v_b, exact = FALSE),
+      error = function(e) NULL
+    )
+    
+    if (is.null(res)) {
+      return(tags$div(class = "test-result test-neutral",
+                      tags$p("Test impossible à calculer sur ces données.")
+      ))
+    }
+    
+    p <- res$p.value
+    m_a <- round(mean(v_a, na.rm = TRUE), 1)
+    m_b <- round(mean(v_b, na.rm = TRUE), 1)
+    ecart <- abs(m_a - m_b)
+    plus_rapide <- if (m_a > m_b) a else b
+    plus_lent   <- if (m_a > m_b) b else a
+    
+    # Interprétation en langage clair
+    if (p < 0.001) {
+      verdict_class <- "test-strong"
+      verdict_text  <- paste0(
+        "L'écart entre ", tags$b(a), " et ", tags$b(b),
+        " est très significatif (p < 0.001). ",
+        tags$b(plus_rapide), " roule en moyenne ", ecart,
+        " km/h plus vite que ", plus_lent, "."
+      )
+    } else if (p < 0.05) {
+      verdict_class <- "test-significant"
+      verdict_text  <- paste0(
+        "L'écart entre ", tags$b(a), " et ", tags$b(b),
+        " est statistiquement significatif (p = ", signif(p, 3), "). ",
+        tags$b(plus_rapide), " roule en moyenne ", ecart,
+        " km/h plus vite que ", plus_lent, "."
+      )
+    } else {
+      verdict_class <- "test-ns"
+      verdict_text  <- paste0(
+        "L'écart entre ", tags$b(a), " et ", tags$b(b),
+        " n'est pas statistiquement significatif (p = ", signif(p, 3), "). ",
+        "La différence observée (", ecart, " km/h) ",
+        "peut être due au hasard."
+      )
+    }
+    
+    tags$div(class = paste("test-result", verdict_class),
+             tags$p(HTML(verdict_text)),
+             tags$p(class = "test-meta",
+                    "Moyennes : ", tags$b(a), " = ", m_a, " km/h · ",
+                    tags$b(b), " = ", m_b, " km/h · ",
+                    "Test : Wilcoxon-Mann-Whitney · ",
+                    "n(A) = ", length(v_a), ", n(B) = ", length(v_b))
+    )
   })
 
   # ============================================================================
