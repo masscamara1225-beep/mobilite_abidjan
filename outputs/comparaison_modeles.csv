@@ -1,0 +1,5 @@
+Modele,RMSE,R2,MAE
+Random Forest,3.91,0.847,3.077
+Arbre de décision,4.687,0.726,3.698
+k-NN,5.784,0.588,4.635
+Régression linéaire,7.543,0.292,6.113
