@@ -58,8 +58,8 @@ ui <- dashboardPage(
 
     # Footer sidebar — équipe + version
     tags$div(class = "side-footer",
-      tags$div("CAMARA Massaram · LOGBO Axelle"),
-      tags$div("M1 DS IA · UFHB · 2025"),
+      tags$div("CAMARA Massaram · LOGBO Axelle· KOUADIO Ryu Emmanuel Marie"),
+      tags$div("M1 DS&IA · UFHBMI · 2025-2026"),
       tags$div(style = "margin-top:6px; opacity:0.6;", paste("v", APP_VERSION))
     )
   ),
@@ -121,10 +121,11 @@ ui <- dashboardPage(
             card(
               title = "À propos du projet",
               tags$p("Cet observatoire a été développé par ",
-                     tags$strong("CAMARA Massaram"), " et ",
-                     tags$strong("LOGBO Axelle"),
-                     " (M1 Data Science et IA · UFHB) pour l'ONG ",
-                     tags$strong("Abidjan Mobilité Durable"), "."),
+                     tags$strong("CAMARA Massaram"), ", ",
+                     tags$strong("LOGBO Axelle"), " et ",
+                     tags$strong("KOUADIO Ryu Emmanuel Marie"),
+                     " (M1 Data Science&IA · UFHBMI) ",
+                     tags$strong("Abidjan Mobilité "), "."),
               tags$p("Il croise trois sources de données — réseau GTFS des bus
                      et woro-woro, vitesses TomTom sur 20 axes, et géométrie
                      OpenStreetMap — pour rendre visible une crise jusqu'ici

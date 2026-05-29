@@ -5,6 +5,7 @@
 # Équipe :
 #   • CAMARA Massaram (P2) — 4 onglets : Accueil, Carte, Trafic, Exploration
 #   • LOGBO Axelle    (P1) — 4 onglets : Réseau, ML, Données, Recommandations
+#   • KOUADIO Ryu Emmanuel Marie   — Rapport Quarto
 #
 # Formation : M1 Data Science et IA — UFHB Abidjan
 # Encadrant : Dr. Laurent Rouvière (Université Rennes 2)
@@ -288,7 +289,8 @@ RAPPORT_URL   <- "rapport.html"
 
 EQUIPE <- list(
   list(nom = "CAMARA Massaram",  role = "P2 — Accueil, Carte, Trafic, Exploration"),
-  list(nom = "LOGBO Axelle",     role = "P1 — Réseau, ML, Données, Recommandations")
+  list(nom = "LOGBO Axelle",     role = "P1 — Réseau, ML, Données, Recommandations"),
+  list(nom = "KOUADIO Ryu Emmanuel Marie", role = "Rapport Quarto")
 )
 
 loader_carte <- Waiter$new(
