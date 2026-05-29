@@ -774,6 +774,44 @@ table.dataTable tbody tr:hover {
   color: var(--text-muted, #6B7280);
 }
 
+/* ============================================================================
+   OBJECTIFS (Accueil — objectif principal + objectifs spécifiques)
+   ============================================================================ */
+.objectif-principal {
+  padding: 16px 18px;
+  background: var(--orange-pale);
+  border-left: 4px solid var(--orange);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+.objectifs-specifiques {
+  padding: 4px 4px 4px 4px;
+}
+.obj-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--orange);
+  margin: 0 0 8px 0;
+}
+.obj-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0;
+}
+.obj-list {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+}
+.obj-list li {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
 /* responsive */
 @media (max-width: 768px) {
   .ph-title { font-size: 20px; }

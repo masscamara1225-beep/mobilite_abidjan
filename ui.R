@@ -152,6 +152,31 @@ ui <- dashboardPage(
           )
         ),
         
+        # Objectifs de l'étude
+        fluidRow(
+          column(12,
+                 card(
+                   title = "Objectifs",
+                   tags$div(class = "objectif-principal",
+                            tags$p(class = "obj-label", "Objectif principal"),
+                            tags$p(class = "obj-text",
+                                   "Mesurer et visualiser les disparités de congestion entre
+                        les communes du Grand Abidjan, puis proposer une
+                        priorisation des axes à traiter.")
+                   ),
+                   tags$div(class = "objectifs-specifiques",
+                            tags$p(class = "obj-label", "Objectifs spécifiques"),
+                            tags$ul(class = "obj-list",
+                                    tags$li("Cartographier la congestion subie par chaque commune"),
+                                    tags$li("Quantifier statistiquement les écarts (IC 95 %, tests)"),
+                                    tags$li("Identifier les axes routiers prioritaires pour intervention"),
+                                    tags$li("Mettre les données et l'analyse à disposition de manière transparente")
+                            )
+                   )
+                 )
+          )
+        ),
+        
         # Parcours guidé
         fluidRow(
           column(12,
