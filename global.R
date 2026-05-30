@@ -23,6 +23,7 @@ library(shinyWidgets)        # pickerInput, awesomeRadio, etc.
 library(shinyjs)
 library(shinycssloaders)     # withSpinner
 library(waiter)              # écran chargement démarrage
+
 library(geojsonsf)
 
 # Manipulation données
@@ -43,9 +44,12 @@ library(visNetwork)
 # Spatial / Routing
 library(sf)
 library(osrm)   # itinéraires entre communes
+library(class)    # pour kNN
+library(rpart)    # pour arbre de décision
 
 # Réseau
 library(igraph)
+library(randomForest)
 
 # ------------------------------------------------------------------------------
 # 2. PALETTE — Couleurs CI sobres
