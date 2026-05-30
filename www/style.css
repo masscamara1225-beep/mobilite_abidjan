@@ -206,11 +206,12 @@ body, .content-wrapper, .right-side {
   margin: 0;
 }
 .section-subtitle {
-  font-size: 14px;
-  color: var(--muted);
+  font-size: 15px;
+  color: black;
   margin: 0 0 24px;
   max-width: 760px;
   line-height: 1.6;
+  font-weight: 600;
 }
 
 /* KPI cards avec gradient et ombre teintée */
