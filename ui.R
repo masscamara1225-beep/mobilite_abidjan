@@ -53,7 +53,8 @@ ui <- dashboardPage(
                menuSubItem("Performance modèles", tabName = "ml_eval"),
                menuSubItem("Profils de communes", tabName = "ml_clust")),
       menuItem("Données",       tabName = "donnees",         icon = icon("table")),
-      menuItem("Recommandations", tabName = "recommandations", icon = icon("lightbulb"))
+      menuItem("Recommandations", tabName = "recommandations", icon = icon("lightbulb")),
+      menuItem("À propos",      tabName = "apropos",         icon = icon("circle-info"))
     ),
 
     # Footer sidebar — équipe + version
@@ -337,7 +338,7 @@ ui <- dashboardPage(
                     inline   = TRUE),
                   radioButtons("trafic_y", "Indicateur",
                     choices  = c("Vitesse (km/h)" = "vitesse_kmh",
-                                 "Indice de congestion" = "indice_cong"),
+                                 "Indice de fluidité" = "indice_cong"),
                     selected = "vitesse_kmh")
                 )
               ),
@@ -346,7 +347,7 @@ ui <- dashboardPage(
                   plotlyOutput("courbe_journaliere", height = 420),
                   color = COULEURS$bleu, type = 6
                 ),
-                note_box(textOutput("insight_courbe", inline = TRUE))
+                uiOutput("interpretation_courbe")
               )
             )
           ),
@@ -368,10 +369,11 @@ ui <- dashboardPage(
                 )
               ),
               column(9,
-                withSpinner(
-                  plotlyOutput("heatmap_hebdo", height = 420),
-                  color = COULEURS$orange, type = 6
-                )
+                     withSpinner(
+                       plotlyOutput("heatmap_hebdo", height = 420),
+                       color = COULEURS$orange, type = 6
+                     ),
+                     uiOutput("interpretation_heatmap")
               )
             )
           ),
@@ -389,10 +391,11 @@ ui <- dashboardPage(
                 )
               ),
               column(9,
-                withSpinner(
-                  plotlyOutput("barplot_pires", height = 420),
-                  type = 6
-                )
+                     withSpinner(
+                       plotlyOutput("barplot_pires", height = 420),
+                       type = 6
+                     ),
+                     uiOutput("interpretation_comparateur")
               )
             )
           )
@@ -434,18 +437,20 @@ ui <- dashboardPage(
         # Boxplot + Distribution + IC
         fluidRow(
           column(6,
-            card(
-              title = "Distribution des vitesses par commune",
-              withSpinner(plotlyOutput("expl_boxplot", height = 380), type = 6)
-            )
+                 card(
+                   title = "Distribution des vitesses par commune",
+                   withSpinner(plotlyOutput("expl_boxplot", height = 380), type = 6),
+                   uiOutput("interpretation_boxplot")
+                 )
           ),
           column(6,
-            card(
-              title = "Histogramme + IC 95 %",
-              withSpinner(plotlyOutput("expl_histo", height = 380), type = 6),
-              tags$p(class = "ic-line",
-                "IC 95 % : ", tags$strong(textOutput("expl_ic_text", inline = TRUE)))
-            )
+                 card(
+                   title = "Histogramme + IC 95 %",
+                   withSpinner(plotlyOutput("expl_histo", height = 380), type = 6),
+                   tags$p(class = "ic-line",
+                          "IC 95 % : ", tags$strong(textOutput("expl_ic_text", inline = TRUE))),
+                   uiOutput("interpretation_histo")
+                 )
           )
         ),
 
@@ -657,8 +662,163 @@ ui <- dashboardPage(
         note_box("Les recommandations s'appuient sur les résultats des onglets
                   Réseau (commune critique), ML (variables explicatives) et
                   Exploration (variabilité des temps).")
+      ),
+      
+      # ====================================================================
+      # ONGLET 9 — À PROPOS
+      # ====================================================================
+      tabItem(
+        tabName = "apropos",
+        page_header(
+          title = "À propos du projet",
+          meta  = "Équipe · Sources de données · Stack technique"
+        ),
+        section_subtitle(
+          "Présentation de  l'équipe, le cadre académique, les sources
+           de données et la stack technique utilisée pour cette étude."
+        ),
+        
+        # 1. ÉQUIPE
+        fluidRow(
+          column(12,
+                 card(
+                   title = "Équipe",
+                   fluidRow(
+                     column(4,
+                            tags$div(class = "team-card",
+                                     tags$div(class = "team-avatar team-avatar-orange", "M"),
+                                     tags$h4("CAMARA Massaram"),
+                                     tags$p(class = "team-role",
+                                            "Conception UI/UX, cartographie interactive, exploration
+                       statistique et déploiement")
+                            )
+                     ),
+                     column(4,
+                            tags$div(class = "team-card",
+                                     tags$div(class = "team-avatar team-avatar-vert", "A"),
+                                     tags$h4("LOGBO Axelle"),
+                                     tags$p(class = "team-role",
+                                            "Collecte des données, analyse réseau, modélisation
+                       Machine Learning et recommandations")
+                            )
+                     ),
+                     column(4,
+                            tags$div(class = "team-card",
+                                     tags$div(class = "team-avatar team-avatar-bleu", "E"),
+                                     tags$h4("KOUADIO Ryu Emmanuel Marie"),
+                                     tags$p(class = "team-role",
+                                            "Rédaction du rapport Quarto")
+                            )
+                     )
+                   ),
+                   tags$div(class = "team-encadrant",
+                            tags$p("Encadré par ", tags$strong("Dr Laurent Rouvière"))
+                   )
+                 )
+          )
+        ),
+        
+        # 2. LE PROJET
+        fluidRow(
+          column(12,
+                 card(
+                   title = "Le projet",
+                   tags$div(class = "projet-meta",
+                            tags$div(class = "projet-item",
+                                     tags$span(class = "projet-label", "Cadre"),
+                                     tags$span(class = "projet-value", "M1 Data Science & IA · UFHB")
+                            ),
+                            tags$div(class = "projet-item",
+                                     tags$span(class = "projet-label", "Année"),
+                                     tags$span(class = "projet-value", "2025 - 2026")
+                            ),
+                            tags$div(class = "projet-item",
+                                     tags$span(class = "projet-label", "Durée"),
+                                     tags$span(class = "projet-value", "1 mois")
+                            ),
+                            tags$div(class = "projet-item",
+                                     tags$span(class = "projet-label", "Livraison"),
+                                     tags$span(class = "projet-value", "2 juin 2026")
+                            )
+                   ),
+                   tags$p(class = "projet-objectif",
+                          tags$strong("Objectif pédagogique : "),
+                          "Mettre en pratique les compétences en collecte, traitement,
+                 modélisation et restitution de données dans un contexte réel
+                 — la mobilité urbaine d'Abidjan."
+                   )
+                 )
+          )
+        ),
+        
+        # 3. SOURCES DE DONNÉES
+        fluidRow(
+          column(12,
+                 card(
+                   title = "Sources de données",
+                   tags$div(class = "sources-grid",
+                            tags$div(class = "source-item",
+                                     tags$h5("TomTom Traffic Flow API"),
+                                     tags$p("Vitesses observées sur 20 axes critiques, mesurées
+                          toutes les 30 minutes pendant 16 jours."),
+                                     tags$a(href = "https://developer.tomtom.com/traffic-api/",
+                                            target = "_blank", "developer.tomtom.com")
+                            ),
+                            tags$div(class = "source-item",
+                                     tags$h5("GTFS"),
+                                     tags$p("Réseau de transport public : bus SOTRA,
+                          gbakas et woro-woros."),
+                                     tags$a(href = "https://gtfs.org/", target = "_blank",
+                                            "gtfs.org")
+                            ),
+                            tags$div(class = "source-item",
+                                     tags$h5("OpenStreetMap & OSRM"),
+                                     tags$p("Géométrie des 13 communes et calcul d'itinéraires
+                          routiers via le service OSRM public."),
+                                     tags$a(href = "https://www.openstreetmap.org/",
+                                            target = "_blank", "openstreetmap.org")
+                            ),
+                            tags$div(class = "source-item",
+                                     tags$h5("INS Côte d'Ivoire"),
+                                     tags$p("Données démographiques par commune (recensement 2021)
+                          pour le calcul de l'indice de disparité."),
+                                     tags$a(href = "https://www.ins.ci/", target = "_blank",
+                                            "ins.ci")
+                            )
+                   )
+                 )
+          )
+        ),
+        
+        # 4. STACK TECHNIQUE
+        fluidRow(
+          column(12,
+                 card(
+                   title = "Stack technique",
+                   tags$div(class = "stack-grid",
+                            tags$div(class = "stack-item",
+                                     tags$h5("Langage & Framework"),
+                                     tags$p("R 4.5 · Shiny · shinydashboard")
+                            ),
+                            tags$div(class = "stack-item",
+                                     tags$h5("Visualisation"),
+                                     tags$p("Leaflet · plotly · ggplot2 · visNetwork · DT")
+                            ),
+                            tags$div(class = "stack-item",
+                                     tags$h5("Analyse & ML"),
+                                     tags$p("dplyr · sf · igraph · randomForest · class · rpart")
+                            ),
+                            tags$div(class = "stack-item",
+                                     tags$h5("Routage & Spatial"),
+                                     tags$p("osrm · geojsonsf · OpenStreetMap")
+                            )
+                   ),
+                  
+                 )
+          )
+        )
       )
-
+      
     ) # /tabItems
   )   # /dashboardBody
 )
