@@ -1,6 +1,30 @@
 /* Mobilité Abidjan — palette v10 chaleur travaillée
    sidebar vert sapin, fond cream dégradé, cards ivoire, accents orange CI animés
 */
+/* ============================================================================
+   TEST THÈME CLAIR — à supprimer si non retenu
+   ============================================================================ */
+:root {
+  --bg           : #FFFFFF !important;
+  --bg-grad-top  : #FFFFFF !important;
+  --bg-grad-bot  : #F8F9FA !important;
+  --bg-soft      : #F3F4F6 !important;
+  --white        : #FFFFFF !important;
+  --white-warm   : #FFFFFF !important;
+  --border       : #E5E7EB !important;
+  --border-strong: #D1D5DB !important;
+  --orange-pale  : #FFF7ED !important; /* on garde le pale orange pour les blocs d'observation */
+}
+body {
+  background: #FFFFFF !important;
+}
+.content-wrapper, .right-side {
+  background: #FFFFFF !important;
+}
+
+
+
+
 
 :root {
   --orange       : #E8721C;
