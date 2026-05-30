@@ -1,6 +1,30 @@
 /* Mobilité Abidjan — palette v10 chaleur travaillée
    sidebar vert sapin, fond cream dégradé, cards ivoire, accents orange CI animés
 */
+/* ============================================================================
+   TEST THÈME CLAIR — à supprimer si non retenu
+   ============================================================================ */
+:root {
+  --bg           : #FFFFFF !important;
+  --bg-grad-top  : #FFFFFF !important;
+  --bg-grad-bot  : #F8F9FA !important;
+  --bg-soft      : #F3F4F6 !important;
+  --white        : #FFFFFF !important;
+  --white-warm   : #FFFFFF !important;
+  --border       : #E5E7EB !important;
+  --border-strong: #D1D5DB !important;
+  --orange-pale  : #FFF7ED !important; /* on garde le pale orange pour les blocs d'observation */
+}
+body {
+  background: #FFFFFF !important;
+}
+.content-wrapper, .right-side {
+  background: #FFFFFF !important;
+}
+
+
+
+
 
 :root {
   --orange       : #E8721C;
@@ -676,6 +700,367 @@ table.dataTable tbody tr:hover {
 }
 .progress-bar {
   background: linear-gradient(90deg, var(--orange) 0%, var(--orange-light) 100%) !important;
+}
+
+/* ============================================================================
+   NOTRE CONSTAT (Accueil — boîtes Adjamé / Yopougon)
+   ============================================================================ */
+.constat-intro {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+  margin: 4px 0 18px 0;
+  font-style: italic;
+}
+.constat-box {
+  padding: 18px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  margin-bottom: 10px;
+  min-height: 180px;
+}
+.constat-box h4 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.constat-box p {
+  margin: 6px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.constat-box-orange {
+  border-left: 4px solid var(--orange);
+  background: var(--orange-pale);
+}
+.constat-box-orange h4 { color: var(--orange); }
+
+.constat-box-red {
+  border-left: 4px solid var(--rouge);
+  background: var(--rouge-soft);
+}
+.constat-box-red h4 { color: var(--rouge); }
+
+.constat-conclusion {
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: var(--orange-pale);
+  border-left: 3px solid var(--orange);
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+/* ============================================================================
+   PARCOURS GUIDÉ (Accueil — cards cliquables vers onglets)
+   ============================================================================ */
+.section-title {
+  margin: 30px 0 4px 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+.section-subtitle {
+  margin: 0 0 18px 0;
+  font-size: 14px;
+  color: var(--text-muted, #6B7280);
+}
+.parcours-card {
+  display: block;
+  padding: 18px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  margin-bottom: 14px;
+  text-decoration: none !important;
+  color: var(--text) !important;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  min-height: 110px;
+}
+.parcours-card:hover {
+  border-color: var(--orange);
+  box-shadow: 0 4px 12px rgba(232, 114, 28, 0.12);
+  transform: translateY(-2px);
+  text-decoration: none !important;
+}
+.parcours-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.parcours-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted, #6B7280);
+}
+
+/* ============================================================================
+   OBJECTIFS (Accueil — objectif principal + objectifs spécifiques)
+   ============================================================================ */
+.objectif-principal {
+  padding: 16px 18px;
+  background: var(--orange-pale);
+  border-left: 4px solid var(--orange);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+.objectifs-specifiques {
+  padding: 4px 4px 4px 4px;
+}
+.obj-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--orange);
+  margin: 0 0 8px 0;
+}
+.obj-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0;
+}
+.obj-list {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+}
+.obj-list li {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+/* ============================================================================
+   À PROPOS — page équipe + projet + sources + stack
+   ============================================================================ */
+
+/* Cards équipe */
+.team-card {
+  text-align: center;
+  padding: 24px 16px;
+  background: var(--white);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  margin-bottom: 14px;
+  min-height: 220px;
+  transition: all 0.15s ease;
+}
+.team-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+.team-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 700;
+  color: white;
+  margin: 0 auto 14px auto;
+}
+.team-avatar-orange { background: var(--orange); }
+.team-avatar-vert   { background: var(--vert); }
+.team-avatar-bleu   { background: var(--bleu); }
+
+.team-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.team-role {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted, #6B7280);
+}
+.team-encadrant {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+.team-encadrant p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* Card "Le projet" — méta en grille */
+.projet-meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.projet-item {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  background: var(--orange-pale);
+  border-left: 3px solid var(--orange);
+  border-radius: 6px;
+}
+.projet-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--orange);
+  margin-bottom: 4px;
+}
+.projet-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.projet-objectif {
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Sources de données — grille */
+.sources-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.source-item {
+  padding: 16px 18px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--orange);
+  border-radius: 6px;
+}
+.source-item h5 {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.source-item p {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted, #6B7280);
+}
+.source-item a {
+  font-size: 12px;
+  color: var(--orange);
+  text-decoration: none;
+}
+.source-item a:hover {
+  text-decoration: underline;
+}
+
+/* Stack technique — grille */
+.stack-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.stack-item {
+  padding: 14px 16px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.stack-item h5 {
+  margin: 0 0 6px 0;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--orange);
+}
+.stack-item p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+}
+.stack-deploy {
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--orange-pale);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text);
+}
+.stack-deploy a {
+  color: var(--orange);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Responsive : sur mobile, les grilles passent à 1 ou 2 colonnes */
+@media (max-width: 768px) {
+  .projet-meta   { grid-template-columns: repeat(2, 1fr); }
+  .sources-grid  { grid-template-columns: 1fr; }
+  .stack-grid    { grid-template-columns: 1fr; }
+}
+
+/* ============================================================================
+   OBSERVATIONS CLÉS — bloc d'interprétation sous chaque graphique
+   ============================================================================ */
+.observations-cles {
+  margin-top: 18px;
+  padding: 16px 18px;
+  background: var(--orange-pale);
+  border-left: 3px solid var(--orange);
+  border-radius: 6px;
+}
+.obs-title {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--orange);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.obs-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.obs-row:last-child { margin-bottom: 0; }
+.obs-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+
+/* Test statistique — section implication */
+.test-sep {
+  border: none;
+  border-top: 1px dashed rgba(0,0,0,0.12);
+  margin: 12px 0;
+}
+.test-implication {
+  margin: 8px 0 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text);
 }
 
 /* responsive */

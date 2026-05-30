@@ -5,6 +5,7 @@
 # Équipe :
 #   • CAMARA Massaram (P2) — 4 onglets : Accueil, Carte, Trafic, Exploration
 #   • LOGBO Axelle    (P1) — 4 onglets : Réseau, ML, Données, Recommandations
+#   • KOUADIO Ryu Emmanuel Marie   — Rapport Quarto
 #
 # Formation : M1 Data Science et IA — UFHB Abidjan
 # Encadrant : Dr. Laurent Rouvière (Université Rennes 2)
@@ -22,6 +23,7 @@ library(shinyWidgets)        # pickerInput, awesomeRadio, etc.
 library(shinyjs)
 library(shinycssloaders)     # withSpinner
 library(waiter)              # écran chargement démarrage
+library(geojsonsf)
 
 # Manipulation données
 library(dplyr)
@@ -40,7 +42,7 @@ library(visNetwork)
 
 # Spatial / Routing
 library(sf)
-library(osrm)  
+library(osrm)   # itinéraires entre communes
 
 # Réseau
 library(igraph)
@@ -81,12 +83,32 @@ ABIDJAN_ZOOM <- 11
 flux_enrichi <- tryCatch(
   read_csv("data/processed/flux_enrichi.csv", show_col_types = FALSE) |>
     mutate(date = as.Date(date),
-           timestamp = as.POSIXct(timestamp)),
+           timestamp = as.POSIXct(timestamp)) |>
+    # Si commune_dep n'existe pas (ancien format), on le crée depuis commune
+    (\(df) {
+      if (!"commune_dep" %in% names(df)) {
+        df |> separate(commune,
+                       into = c("commune_dep", "commune_arr"),
+                       sep = "/", fill = "right", remove = FALSE)
+      } else {
+        # Nouveau format : commune_dep existe déjà, on crée commune_arr depuis commune si besoin
+        if (!"commune_arr" %in% names(df)) {
+          df |> separate(commune,
+                         into = c("tmp_dep", "commune_arr"),
+                         sep = "/", fill = "right", remove = FALSE) |>
+            select(-tmp_dep)
+        } else {
+          df
+        }
+      }
+    })(),
   error = function(e) {
-    message("⚠️  flux_enrichi.csv pas encore disponible — stub utilisé")
+    message("⚠️  flux_enrichi.csv pas encore livré — stub utilisé")
     tibble(
       id_axe = character(), nom_axe = character(),
-      commune = character(), destination = character(),
+      commune = character(),
+      commune_dep = character(), commune_arr = character(),
+      destination = character(),
       lat_dep = double(), lon_dep = double(),
       vitesse_kmh = double(), vitesse_libre_ref = double(),
       indice_cong = double(), niveau_cong = character(),
@@ -97,13 +119,68 @@ flux_enrichi <- tryCatch(
   }
 )
 
-communes_wiki <- tryCatch(
-  read_csv("data/processed/stats_communes_2021.csv", show_col_types = FALSE),
-  error = function(e) {
-    message("⚠️  stats_communes_2021.csv pas encore livré — stub utilisé")
-    tibble(commune = character(), statut = character(), population = integer())
-  }
-)
+
+  communes_wiki <- tryCatch(
+    read_csv("data/processed/stats_communes_2021.csv", show_col_types = FALSE) |>
+      rename(commune = nom_commune,
+             population = population_2021) |>
+      mutate(commune = commune |>
+               stringi::stri_trans_general("Latin-ASCII") |>
+               stringr::str_remove("^Le ")),
+    error = function(e) {
+      message("⚠️  stats_communes_2021.csv pas encore livré — stub utilisé")
+      tibble(commune = character(), statut = character(), population = integer())
+    }
+  )
+  
+  # Polygones des 13 communes (geometry sf)
+  communes_geo <- tryCatch(
+    readRDS("data/raw/osm/communes_abidjan_13.rds") |>
+      mutate(
+        commune = name |>
+          stringi::stri_trans_general("Latin-ASCII")  # retire les accents
+      ) |>
+      select(commune, geometry),
+    error = function(e) {
+      message("⚠️  communes_abidjan_13.rds non trouvé — stub utilisé")
+      sf::st_sf(commune = character(), geometry = sf::st_sfc())
+    }
+  )
+  
+  # ============================================================================
+  # Indice de disparité par commune (cœur de la problématique)
+  # Formule : indice_disparite(c) = indice_cong_moyen(c) × pop(c) / max(pop)
+  # Lecture : impact humain réel de la congestion (pondéré par population)
+  # ============================================================================
+  indice_disparite <- tryCatch({
+    
+    # Indice de congestion moyen par commune (sur commune_dep + commune_arr)
+    cong_par_commune <- bind_rows(
+      flux_enrichi |> select(commune = commune_dep, indice_cong),
+      flux_enrichi |> select(commune = commune_arr, indice_cong) |> filter(!is.na(commune))
+    ) |>
+      group_by(commune) |>
+      summarise(indice_cong_moyen = mean(indice_cong, na.rm = TRUE),
+                n_mesures         = n(),
+                .groups = "drop")
+    
+    # Jointure avec la population et calcul de l'indice de disparité
+    cong_par_commune |>
+      left_join(communes_wiki |> select(commune, population), by = "commune") |>
+      mutate(
+        pop_max          = max(population, na.rm = TRUE),
+        indice_disparite = indice_cong_moyen * population / pop_max
+      ) |>
+      arrange(desc(indice_disparite))
+    
+  }, error = function(e) {
+    message("⚠️  Calcul indice_disparite impossible — données manquantes")
+    tibble(commune = character(), indice_cong_moyen = double(),
+           n_mesures = integer(), population = integer(),
+           pop_max = integer(), indice_disparite = double())
+  })
+  
+  
 graphe_communes <- tryCatch(
   readRDS("data/processed/graphe_communes.rds"),
   error = function(e) {
@@ -115,14 +192,9 @@ graphe_communes <- tryCatch(
 mod_rf <- tryCatch(
   readRDS("models/mod_rf_vitesse.rds"),
   error = function(e) {
-    message(" mod_rf_vitesse.rds pas encore livré")
+    message("⚠️  mod_rf_vitesse.rds pas encore livré")
     NULL
   }
-)
-
-gtfs <- tryCatch(
-  readRDS("data/raw/gtfs/reseau_gtfs.rds"),
-  error = function(e) { message("reseau_gtfs.rds non trouvé"); NULL }
 )
 
 # ------------------------------------------------------------------------------
@@ -234,7 +306,8 @@ RAPPORT_URL   <- "rapport.html"
 
 EQUIPE <- list(
   list(nom = "CAMARA Massaram",  role = "P2 — Accueil, Carte, Trafic, Exploration"),
-  list(nom = "LOGBO Axelle",     role = "P1 — Réseau, ML, Données, Recommandations")
+  list(nom = "LOGBO Axelle",     role = "P1 — Réseau, ML, Données, Recommandations"),
+  list(nom = "KOUADIO Ryu Emmanuel Marie", role = "Rapport Quarto")
 )
 
 loader_carte <- Waiter$new(
