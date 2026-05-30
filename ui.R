@@ -818,7 +818,6 @@ ui <- dashboardPage(
           )
         )
       )
-      
     ) # /tabItems
   )   # /dashboardBody
 )
